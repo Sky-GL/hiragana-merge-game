@@ -1,0 +1,24 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+html, body, #root {
+  height: 100%;
+  margin: 0;
+  overscroll-behavior: none;
+  overflow: hidden;
+  -webkit-tap-highlight-color: transparent;
+}
+body {
+  font-family: 'M PLUS Rounded 1c', 'Zen Maru Gothic', sans-serif;
+  background:
+    radial-gradient(circle at 18% 12%, #FFE7F3 0%, rgba(255,231,243,0) 55%),
+    radial-gradient(circle at 82% 80%, #E3E0FF 0%, rgba(227,224,255,0) 58%),
+    linear-gradient(160deg, #F7EFFF 0%, #FDF1F6 48%, #F1F6FF 100%);
+  background-attachment: fixed;
+  touch-action: none;
+  user-select: none;
+}
+canvas { touch-action: none; display: block; }
+.no-scrollbar::-webkit-scrollbar { display: none; }
+.no-scrollbar { scrollbar-width: none; }

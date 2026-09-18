@@ -1,0 +1,15 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
+  <defs>
+    <radialGradient id="g" cx="34%" cy="28%" r="78%">
+      <stop offset="0" stop-color="#FFEAF0"/>
+      <stop offset="55%" stop-color="#FFB6C1"/>
+      <stop offset="1" stop-color="#F0879F"/>
+    </radialGradient>
+  </defs>
+  <circle cx="32" cy="32" r="30" fill="url(#g)"/>
+  <ellipse cx="21" cy="17" rx="9" ry="5" fill="#fff" opacity="0.85" transform="rotate(-28 21 17)"/>
+  <ellipse cx="45" cy="19" rx="4.5" ry="2.6" fill="#fff" opacity="0.6" transform="rotate(30 45 19)"/>
+  <text x="32" y="45" text-anchor="middle" font-size="36" font-weight="700"
+        font-family="'Zen Maru Gothic','M PLUS Rounded 1c','Hiragino Maru Gothic ProN','Yu Gothic',sans-serif"
+        fill="#69485F">あ</text>
+</svg>

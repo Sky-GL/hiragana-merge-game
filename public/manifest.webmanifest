@@ -1,0 +1,13 @@
+{
+  "name": "Kana Pop",
+  "short_name": "Kana Pop",
+  "description": "Merge & learn Japanese kana",
+  "start_url": "/",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#F7EFFF",
+  "theme_color": "#FFC6DF",
+  "icons": [
+    { "src": "/favicon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any" }
+  ]
+}

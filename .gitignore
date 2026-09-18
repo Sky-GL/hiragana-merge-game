@@ -1,0 +1,8 @@
+node_modules
+dist
+.npm-cache
+.gh
+vercel-deploy
+voice-check
+.DS_Store
+*.local
