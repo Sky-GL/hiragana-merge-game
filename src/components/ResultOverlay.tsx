@@ -80,9 +80,9 @@ export default function ResultOverlay({ visible, chars, score, best, unlocked, o
           <button
             onClick={onHome}
             aria-label="Home"
-            className="flex h-12 w-12 items-center justify-center rounded-full border border-white/80 bg-white/70 text-xl shadow-md active:scale-95"
+            className="flex h-12 items-center justify-center rounded-full border border-white/80 bg-white/70 px-4 text-xs font-black text-[#6B4E68] shadow-md active:scale-95"
           >
-            🏠
+            HOME
           </button>
           <button
             onClick={onRetry}

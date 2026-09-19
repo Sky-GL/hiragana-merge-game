@@ -144,6 +144,11 @@ export default function App() {
     setScore(0);
     setShowHint(true);
     setTiltEnabled(false);
+    setClearToast(null);
+    if (clearTimer.current !== null) {
+      window.clearTimeout(clearTimer.current);
+      clearTimer.current = null;
+    }
     gameRef.current?.restart();
     setPhase('title');
   };
@@ -190,6 +195,13 @@ export default function App() {
             <span className="text-sm">👑</span>
             <span className="font-round text-sm font-bold leading-none text-[#A98EBE]">{best}</span>
           </div>
+          <button
+            onClick={goHome}
+            aria-label="Return to home"
+            className="rounded-full border border-white/70 bg-white/45 px-3 py-1.5 text-xs font-black text-[#6B4E68] shadow-sm backdrop-blur-md active:scale-95"
+          >
+            HOME
+          </button>
           <button
             onClick={() => setHelp(true)}
             aria-label="How to play"

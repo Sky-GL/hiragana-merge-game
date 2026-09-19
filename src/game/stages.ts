@@ -69,10 +69,9 @@ const STAGE_SOURCE: Pair[][] = [
   [['ぴゃ','pya'],['ぴゅ','pyu'],['ぴょ','pyo']],
 ];
 
-/** 段階数に合わせて半径を等比で割り当てる（小さい→大きいの手触りを一定に保つ） */
-function radiusFor(i: number, n: number) {
-  if (n <= 1) return R_MIN;
-  return Math.round(R_MIN * Math.pow(R_MAX / R_MIN, i / (n - 1)));
+/** 10段階ステージの成長曲線を基準にする。行別の短いステージで最終文字だけ巨大化させない。 */
+function radiusFor(i: number) {
+  return Math.round(R_MIN * Math.pow(R_MAX / R_MIN, i / 9));
 }
 
 export const STAGES: Stage[] = STAGE_SOURCE.map((pairs, si) => ({
@@ -82,7 +81,7 @@ export const STAGES: Stage[] = STAGE_SOURCE.map((pairs, si) => ({
     level: i,
     kana,
     romaji,
-    radius: radiusFor(i, pairs.length),
+    radius: radiusFor(i),
     base: PALETTE[i % PALETTE.length],
   })),
 }));
