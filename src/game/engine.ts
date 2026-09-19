@@ -448,11 +448,11 @@ export class KanaGame {
     this.autoDropDeadline = 0;
   }
 
-  /** 通常は4秒、チャレンジは2秒で次の文字を自動落下させる。 */
+  /** 通常は3秒、チャレンジは2秒で次の文字を自動落下させる。 */
   private scheduleAutoDrop() {
     if (!this.canvas || this.finished) return;
     this.clearAutoDropTimer();
-    const delay = this.finalMergeMode === 'pair' ? 2000 : 4000;
+    const delay = this.finalMergeMode === 'pair' ? 2000 : 3000;
     this.autoDropDeadline = performance.now() + delay;
     this.autoDropTimer = window.setTimeout(() => {
       this.autoDropTimer = null;
