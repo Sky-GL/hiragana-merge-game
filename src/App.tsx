@@ -113,16 +113,16 @@ export default function App() {
 
   /** 最終文字を16個分まで段階マージすると、次の行を解放する。 */
   const handleStageClear = useCallback((clearedByFinalPair: boolean) => {
-    if (stageClearPending.current) return;
+    if (stageClearPending.current) return false;
     const p = progressRef.current;
     const current = stageIdRef.current;
-    if (current < p.unlockedStages) return; // 解放済み行の遊び直しでは進行しない
+    if (current < p.unlockedStages) return false; // 解放済み行の遊び直しでは進行しない
 
     stageClearPending.current = true;
     if (clearTimer.current !== null) window.clearTimeout(clearTimer.current);
     if (!clearedByFinalPair) {
       stageClearPending.current = false;
-      return;
+      return false;
     }
 
     if (current < STAGE_COUNT) {
@@ -153,6 +153,7 @@ export default function App() {
       stageClearPending.current = false;
     }
     clearTimer.current = window.setTimeout(() => setClearToast(null), 3000);
+    return true;
   }, []);
 
   const handleChallengeBonus = useCallback((points: number) => {
