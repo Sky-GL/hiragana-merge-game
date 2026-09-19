@@ -17,7 +17,7 @@ const OVER_GRACE = 1600; // ms
 const FIXED_STEP = 1000 / 60; // 物理は固定ステップ（端末のfpsで挙動を変えない）
 const BEST_KEY = 'kanapop.best';
 const SESSION_KEY = 'kanapop.session';
-const SESSION_VERSION = 14;
+const SESSION_VERSION = 15;
 
 type SavedBall = {
   x: number;
@@ -502,27 +502,52 @@ export class KanaGame {
 
   private onCollide = (e: Matter.IEventCollision<Matter.Engine>) => {
     for (const pair of e.pairs) {
-      const a = pair.bodyA;
-      const b = pair.bodyB;
-      if (a.isStatic || b.isStatic) continue;
-      const pa = plug(a);
-      const pb = plug(b);
-      if (!pa || !pb || pa.merging || pb.merging || pa.level !== pb.level) continue;
-      if (pa.level >= this.maxLevel) {
-        if (pa.level === this.maxLevel && this.finalMergeMode === 'pair' && !this.stageClearInProgress) {
-          if (pa.finalTier !== pb.finalTier) continue;
-          pa.merging = true;
-          pb.merging = true;
-          if (pa.finalTier < 3) this.evolveFinalPair(a, b, pa.finalTier === 0 ? 1 : pa.finalTier === 1 ? 2 : 3);
-          else this.clearFinalPair(a, b);
-        }
-        continue;
-      }
-      pa.merging = true;
-      pb.merging = true;
-      this.merge(a, b, pa.level + 1);
+      this.tryMergePair(pair.bodyA, pair.bodyB);
     }
   };
+
+  /** 接触イベントと安全判定で共通に使う合体処理。合体できた時だけ true。 */
+  private tryMergePair(a: Matter.Body, b: Matter.Body): boolean {
+    if (a.isStatic || b.isStatic) return false;
+    const pa = plug(a);
+    const pb = plug(b);
+    if (!pa || !pb || pa.merging || pb.merging || pa.level !== pb.level) return false;
+    if (pa.level >= this.maxLevel) {
+      if (pa.level !== this.maxLevel || this.finalMergeMode !== 'pair' || this.stageClearInProgress || pa.finalTier !== pb.finalTier) return false;
+      pa.merging = true;
+      pb.merging = true;
+      if (pa.finalTier < 3) this.evolveFinalPair(a, b, pa.finalTier === 0 ? 1 : pa.finalTier === 1 ? 2 : 3);
+      else this.clearFinalPair(a, b);
+      return true;
+    }
+    pa.merging = true;
+    pb.merging = true;
+    this.merge(a, b, pa.level + 1);
+    return true;
+  }
+
+  /** 物理エンジンが接触開始を通知し損ねても、重なった同じ文字を必ず合体させる。 */
+  private mergeOverlappingBalls() {
+    const balls = Matter.Composite.allBodies(this.engine.world).filter((body) => !body.isStatic);
+    for (let i = 0; i < balls.length; i++) {
+      const a = balls[i];
+      const pa = plug(a);
+      if (!pa || pa.merging) continue;
+      const radiusA = this.chars[pa.level]?.radius;
+      if (!radiusA) continue;
+      for (let j = i + 1; j < balls.length; j++) {
+        const b = balls[j];
+        const pb = plug(b);
+        if (!pb || pb.merging || pa.level !== pb.level || pa.finalTier !== pb.finalTier) continue;
+        const radiusB = this.chars[pb.level]?.radius;
+        if (!radiusB) continue;
+        const dx = a.position.x - b.position.x;
+        const dy = a.position.y - b.position.y;
+        const touchingDistance = radiusA + radiusB;
+        if (dx * dx + dy * dy <= touchingDistance * touchingDistance && this.tryMergePair(a, b)) return;
+      }
+    }
+  }
 
   /** 衝突と同フレームで発声・エフェクト（0.1秒以内の即時強化） */
   private merge(a: Matter.Body, b: Matter.Body, nextLevel: number) {
@@ -613,6 +638,7 @@ export class KanaGame {
     this.accumulator = Math.min(this.accumulator + dt * 1000, FIXED_STEP * 5);
     while (this.accumulator >= FIXED_STEP) {
       Matter.Engine.update(this.engine, FIXED_STEP);
+      this.mergeOverlappingBalls();
       this.accumulator -= FIXED_STEP;
     }
     updateParticles(this.particles, dt);

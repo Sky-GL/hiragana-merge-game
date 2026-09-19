@@ -24,6 +24,8 @@ export default function HowToPlay({ visible, onClose }: Props) {
             <br />
             🌈 FINAL + 🌈 FINAL → next row! (16 final letters)
             <br />
+            Every final merge shows a crown, gem or rainbow
+            <br />
             🌈 FINAL made = RAINBOW BONUS +300
             <br />
             Level up: 100 EXP at Lv 1, +90 EXP each level
