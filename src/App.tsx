@@ -304,20 +304,16 @@ export default function App() {
       </div>
 
       {/* スコア: 数字とピクトグラムのみ */}
-      <div className="flex w-full max-w-[460px] items-center justify-between px-1">
-        <div className="flex items-center gap-2 rounded-full border border-white/70 bg-white/45 px-4 py-1.5 shadow-sm backdrop-blur-md">
+      <div className="flex w-full max-w-[460px] items-center justify-between gap-1 px-0.5">
+        <div className="flex shrink-0 items-center gap-1.5 rounded-full border border-white/70 bg-white/45 px-3 py-1 shadow-sm backdrop-blur-md">
           <span className="text-base">⭐</span>
-          <span className="font-round text-xl font-black leading-none text-[#6B4E68]">{score}</span>
+          <span className="font-round text-lg font-black leading-none text-[#6B4E68]">{score}</span>
         </div>
-        <div className="flex items-center gap-1">
-          <div className="flex items-center gap-2 rounded-full border border-white/70 bg-white/45 px-4 py-1.5 shadow-sm backdrop-blur-md">
-            <span className="text-sm">👑</span>
-            <span className="font-round text-sm font-bold leading-none text-[#A98EBE]">{best}</span>
-          </div>
+        <div className="flex shrink-0 items-center gap-0.5">
           <button
             onClick={goHome}
             aria-label="Return to home"
-            className="rounded-full border border-white/70 bg-white/45 px-3 py-1.5 text-xs font-black text-[#6B4E68] shadow-sm backdrop-blur-md active:scale-95"
+            className="h-8 rounded-full border border-white/70 bg-white/45 px-2 text-[10px] font-black text-[#6B4E68] shadow-sm backdrop-blur-md active:scale-95"
           >
             HOME
           </button>
@@ -325,7 +321,7 @@ export default function App() {
             onClick={togglePause}
             aria-label={paused ? 'Resume game' : 'Pause game'}
             title={paused ? 'RESUME' : 'PAUSE'}
-            className="flex h-9 w-9 items-center justify-center rounded-full border border-white/70 bg-white/45 text-base font-black text-[#6B4E68] shadow-sm backdrop-blur-md active:scale-95"
+            className="flex h-8 w-8 items-center justify-center rounded-full border border-white/70 bg-white/45 text-sm font-black text-[#6B4E68] shadow-sm backdrop-blur-md active:scale-95"
           >
             {paused ? '▶' : 'Ⅱ'}
           </button>
@@ -333,14 +329,14 @@ export default function App() {
             onClick={resetGame}
             aria-label="Reset current game"
             title="RESET"
-            className="flex h-9 w-9 items-center justify-center rounded-full border border-white/70 bg-white/45 text-lg font-black text-[#6B4E68] shadow-sm backdrop-blur-md active:scale-95"
+            className="flex h-8 w-8 items-center justify-center rounded-full border border-white/70 bg-white/45 text-base font-black text-[#6B4E68] shadow-sm backdrop-blur-md active:scale-95"
           >
             ↻
           </button>
           <button
             onClick={() => setHelp(true)}
             aria-label="How to play"
-            className="flex h-9 w-9 items-center justify-center rounded-full border border-white/70 bg-white/45 text-sm shadow-sm backdrop-blur-md active:scale-95"
+            className="flex h-8 w-8 items-center justify-center rounded-full border border-white/70 bg-white/45 text-xs shadow-sm backdrop-blur-md active:scale-95"
           >
             ❓
           </button>
@@ -356,7 +352,7 @@ export default function App() {
             }}
             aria-label={tiltEnabled ? 'Disable tilt controls' : 'Enable tilt controls'}
             title={tiltEnabled ? 'Tilt: ON' : 'Tilt: OFF'}
-            className="flex h-9 w-9 items-center justify-center rounded-full border border-white/70 bg-white/45 text-[11px] font-black text-[#6B4E68] shadow-sm backdrop-blur-md active:scale-95"
+            className="flex h-8 w-8 items-center justify-center rounded-full border border-white/70 bg-white/45 text-[10px] font-black text-[#6B4E68] shadow-sm backdrop-blur-md active:scale-95"
           >
             {tiltEnabled ? '📱✓' : '📱×'}
           </button>
