@@ -130,6 +130,7 @@ export default function App() {
       clearSavedSession();
       clearTimer.current = window.setTimeout(() => setClearToast(null), 3000);
       challengeRestartTimer.current = window.setTimeout(() => {
+        gameRef.current?.setChallengeMode(true, progressRef.current.level);
         gameRef.current?.restart();
         setUnlocked(0);
         setFinished(false);
@@ -277,6 +278,8 @@ export default function App() {
               gameRef.current = g;
               g.setStage(stageIdRef.current, true);
               g.setPlayerLevel(progressRef.current.level);
+              const completedRounds = progressRef.current.stageCompletions[stageIdRef.current] ?? 0;
+              g.setChallengeMode(completedRounds > 0 && completedRounds < CHALLENGE_ROUNDS, progressRef.current.level);
               g.restoreSession();
             }}
             callbacks={{

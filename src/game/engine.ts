@@ -103,6 +103,7 @@ export class KanaGame {
   private score = 0;
   private chars: KanaChar[] = getStage(1).chars;
   private spawnPool = spawnPoolFor(1);
+  private challengeMode = false;
   private spawnBag: number[] = [];
   private recentSpawns: number[] = [];
   private openingSpawns: number[] = [];
@@ -132,7 +133,16 @@ export class KanaGame {
 
   /** プレイヤーレベルに応じて出現する文字の種類を増やす（＝難易度カーブ） */
   setPlayerLevel(playerLevel: number) {
-    this.spawnPool = spawnPoolFor(playerLevel);
+    this.spawnPool = this.poolFor(playerLevel);
+    this.resetSpawnSequence();
+    this.nextLevel = this.rollSpawn();
+    this.cb.onNext(this.nextLevel);
+  }
+
+  /** チャレンジでは、最終文字の一つ前までを同じ頻度で出して判断を増やす。 */
+  setChallengeMode(enabled: boolean, playerLevel: number) {
+    this.challengeMode = enabled;
+    this.spawnPool = this.poolFor(playerLevel);
     this.resetSpawnSequence();
     this.nextLevel = this.rollSpawn();
     this.cb.onNext(this.nextLevel);
@@ -147,6 +157,11 @@ export class KanaGame {
 
   private get maxLevel() {
     return this.chars.length - 1;
+  }
+
+  private poolFor(playerLevel: number) {
+    if (!this.challengeMode) return spawnPoolFor(playerLevel);
+    return Array.from({ length: Math.max(1, this.maxLevel) }, (_, level) => level);
   }
 
   private rollSpawn() {
