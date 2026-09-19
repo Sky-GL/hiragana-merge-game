@@ -815,6 +815,7 @@ export class KanaGame {
         squash: -0.05 * pop - 0.08 * Math.sin(clearProgress * Math.PI),
         alpha: 1 - clearProgress * 0.65,
         finalTier: p.finalTier,
+        isFinal: p.level === this.maxLevel,
       });
     }
 

@@ -9,7 +9,7 @@ export function drawJellyBall(
   x: number,
   y: number,
   c: KanaChar,
-  opts: { scale?: number; alpha?: number; squash?: number; finalTier?: 0 | 1 | 2 | 3 } = {},
+  opts: { scale?: number; alpha?: number; squash?: number; finalTier?: 0 | 1 | 2 | 3; isFinal?: boolean } = {},
 ) {
   const scale = opts.scale ?? 1;
   const alpha = opts.alpha ?? 1;
@@ -194,6 +194,28 @@ export function drawJellyBall(
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
     ctx.fillText('🌈', 0, -r * 1.18);
+    ctx.restore();
+  }
+
+  // 最終文字は、同じ数字の段階同士でしか合体しない。球の内側に常時表示する。
+  if (opts.isFinal) {
+    const tierValue = String(2 ** (opts.finalTier ?? 0));
+    const badgeX = r * 0.58;
+    const badgeY = -r * 0.55;
+    const badgeR = Math.max(10, r * 0.25);
+    ctx.save();
+    ctx.fillStyle = 'rgba(255,255,255,0.92)';
+    ctx.strokeStyle = opts.finalTier === 3 ? '#B78BE7' : opts.finalTier === 2 ? '#61CFE8' : opts.finalTier === 1 ? '#F2B83F' : '#B49FC7';
+    ctx.lineWidth = Math.max(1.5, r * 0.035);
+    ctx.beginPath();
+    ctx.arc(badgeX, badgeY, badgeR, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.stroke();
+    ctx.fillStyle = '#5E4058';
+    ctx.font = `900 ${Math.max(10, r * 0.26)}px "M PLUS Rounded 1c", sans-serif`;
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText(tierValue, badgeX, badgeY + 0.5);
     ctx.restore();
   }
 
