@@ -24,6 +24,7 @@ const COLOR_BANK = ['#FFB6C1', '#FFD1BA', '#FFF2A3', '#B9F3CC', '#C1E3FE', '#D9C
 
 const R_MIN = 26;
 const R_MAX = 116;
+const VOICE_MIX_RADIUS_SCALE = 0.86;
 
 /** かな + ローマ字（ローマ字は音声ファイル名にもなる） */
 type Pair = [string, string];
@@ -61,6 +62,11 @@ function radiusFor(i: number) {
   return Math.round(R_MIN * Math.pow(R_MAX / R_MIN, i / 9));
 }
 
+function radiusForStage(stageIndex: number, charIndex: number) {
+  const scale = stageIndex === 9 ? VOICE_MIX_RADIUS_SCALE : 1;
+  return Math.round(radiusFor(charIndex) * scale);
+}
+
 export const STAGES: Stage[] = STAGE_SOURCE.map((pairs, si) => ({
   id: si + 1,
   label: STAGE_LABELS[si],
@@ -69,7 +75,7 @@ export const STAGES: Stage[] = STAGE_SOURCE.map((pairs, si) => ({
     level: i,
     kana,
     romaji,
-    radius: radiusFor(i),
+    radius: radiusForStage(si, i),
     base: colorFor(si, i),
   })),
 }));

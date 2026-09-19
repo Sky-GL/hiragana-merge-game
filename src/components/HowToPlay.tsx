@@ -29,6 +29,8 @@ export default function HowToPlay({ visible, onClose }: Props) {
             Level up: 100 EXP at Lv 1, +90 EXP each level
             <br />
             Auto-drop: 2.5 sec in every mode
+            <br />
+            VOICE MIX: balls are 14% smaller
           </p>
         </div>
 
