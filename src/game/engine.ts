@@ -72,6 +72,14 @@ export function loadBest(): number {
   }
 }
 
+export function clearBest() {
+  try {
+    localStorage.removeItem(BEST_KEY);
+  } catch {
+    /* 保存できない環境でもゲームは続行する */
+  }
+}
+
 function saveBest(v: number) {
   try {
     localStorage.setItem(BEST_KEY, String(v));
@@ -110,7 +118,6 @@ export class KanaGame {
   private score = 0;
   private chars: KanaChar[] = getStage(1).chars;
   private spawnPool = [0];
-  private challengeMode = false;
   private finalMergeMode: 'pop' | 'pair' = 'pop';
   private spawnBag: number[] = [];
   private recentSpawns: number[] = [];
@@ -152,7 +159,7 @@ export class KanaGame {
 
   /** チャレンジでは、最終文字の一つ前までを同じ頻度で出して判断を増やす。 */
   setChallengeMode(enabled: boolean, playerLevel: number) {
-    this.challengeMode = enabled;
+    void enabled;
     this.spawnPool = this.poolFor(playerLevel);
     this.resetSpawnSequence();
     this.nextLevel = this.rollSpawn();
@@ -183,12 +190,8 @@ export class KanaGame {
 
   private poolFor(playerLevel: number) {
     void playerLevel;
-    if (this.challengeMode) return Array.from({ length: Math.max(1, this.maxLevel) }, (_, level) => level);
-    const weights = [40, 35, 18, 7];
-    const highestSpawnLevel = Math.min(this.maxLevel - 1, weights.length - 1);
-    return Array.from({ length: Math.max(1, highestSpawnLevel + 1) }, (_, level) =>
-      Array.from({ length: weights[level] }, () => level),
-    ).flat();
+    // 最終文字の一つ前までを均等に出す。最終文字は合体で作る。
+    return Array.from({ length: Math.max(1, this.maxLevel) }, (_, level) => level);
   }
 
   private rollSpawn() {

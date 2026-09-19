@@ -8,6 +8,7 @@ type Props = {
   onSelectStage: (id: number) => void;
   onPlay: () => void;
   onHelp: () => void;
+  onResetAll: () => void;
 };
 
 /** 表紙（タイトル画面）。ロゴ + ステージ選択 + PLAY */
@@ -19,6 +20,7 @@ export default function TitleScreen({
   onSelectStage,
   onPlay,
   onHelp,
+  onResetAll,
 }: Props) {
   const cover = STAGES[0].chars.slice(0, 5);
 
@@ -116,6 +118,13 @@ export default function TitleScreen({
         >
           <span className="text-base">❓</span>
           <span className="text-sm font-bold">How to play</span>
+        </button>
+
+        <button
+          onClick={onResetAll}
+          className="text-[11px] font-black tracking-[0.12em] text-[#A98EBE] underline decoration-[#A98EBE]/40 underline-offset-4 active:opacity-60"
+        >
+          RESET ALL PROGRESS
         </button>
       </div>
 

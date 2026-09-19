@@ -75,6 +75,15 @@ export function unlockNextStage(p: Progress, total: number): Progress {
   return next;
 }
 
+/** 学習の最初から試し直すため、保存済みの進行を削除する。 */
+export function clearProgress() {
+  try {
+    localStorage.removeItem(KEY);
+  } catch {
+    /* 保存できない環境でも画面上の進行は初期化する */
+  }
+}
+
 /** 1周目を終えた行を記録し、次回の開始時にチャレンジ状態を復元する。 */
 export function recordStageCompletion(p: Progress, stageId: number): { next: Progress; completions: number } {
   const completions = 1;

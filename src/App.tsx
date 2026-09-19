@@ -8,9 +8,10 @@ import LevelUpToast from './components/LevelUpToast';
 import ResultOverlay from './components/ResultOverlay';
 import StageClearToast from './components/StageClearToast';
 import TitleScreen from './components/TitleScreen';
-import { loadBest, loadSavedStage, type KanaGame } from './game/engine';
+import { clearBest, clearSavedSession, loadBest, loadSavedStage, type KanaGame } from './game/engine';
 import {
   addExp,
+  clearProgress,
   loadProgress,
   newlyUnlockedKind,
   recordStageCompletion,
@@ -180,6 +181,25 @@ export default function App() {
     setPhase('play');
   };
 
+  const resetAllProgress = () => {
+    if (!window.confirm('すべての学習進行とBESTをリセットしますか？')) return;
+    clearProgress();
+    clearSavedSession();
+    clearBest();
+    const fresh: Progress = { stageLayoutVersion: 5, level: 1, exp: 0, unlockedStages: 1, stageCompletions: {} };
+    progressRef.current = fresh;
+    setProgress(fresh);
+    stageIdRef.current = 1;
+    setStageId(1);
+    setScore(0);
+    setBest(0);
+    setUnlocked(0);
+    setFinished(false);
+    setShowHint(true);
+    setClearToast(null);
+    setPhase('play');
+  };
+
   const closeHelp = () => {
     markHelpSeen();
     setHelp(false);
@@ -236,6 +256,7 @@ export default function App() {
           onSelectStage={setStageId}
           onPlay={startGame}
           onHelp={() => setHelp(true)}
+          onResetAll={resetAllProgress}
         />
         <HowToPlay visible={help} onClose={closeHelp} />
       </div>
