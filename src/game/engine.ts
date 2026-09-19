@@ -131,8 +131,10 @@ export class KanaGame {
   private lastDrop = 0;
   private autoDropTimer: number | null = null;
   private autoDropDeadline = 0;
+  private pausedAutoDropMs = 0;
   private overTime = 0;
   private finished = false;
+  private paused = false;
   private interacted = false;
   private lastFrame = 0;
   private accumulator = 0;
@@ -288,6 +290,8 @@ export class KanaGame {
     this.stageClearInProgress = false;
     this.sessionSaveSuspended = false;
     this.clearAutoDropTimer();
+    this.paused = false;
+    this.pausedAutoDropMs = 0;
     for (const b of Matter.Composite.allBodies(this.engine.world)) {
       if (!b.isStatic) Matter.Composite.remove(this.engine.world, b);
     }
@@ -313,6 +317,23 @@ export class KanaGame {
     this.sessionSaveSuspended = true;
     this.clearAutoDropTimer();
     clearSavedSession();
+  }
+
+  pause() {
+    if (this.finished || this.paused) return;
+    this.paused = true;
+    this.pointerDown = false;
+    this.pausedAutoDropMs = Math.max(0, this.autoDropDeadline - performance.now());
+    this.clearAutoDropTimer();
+    this.saveSession();
+  }
+
+  resume() {
+    if (this.finished || !this.paused) return;
+    this.paused = false;
+    const delay = this.pausedAutoDropMs;
+    this.pausedAutoDropMs = 0;
+    this.scheduleAutoDrop(delay > 0 ? delay : undefined);
   }
 
   /** 端末の傾きを横方向の重力として使う。iPhone はこの呼び出し時に許可を求める。 */
@@ -402,7 +423,7 @@ export class KanaGame {
   }
 
   private onDown = (e: PointerEvent) => {
-    if (this.finished) return;
+    if (this.finished || this.paused) return;
     unlockSpeech();
     unlockSfx();
     preloadClips(this.chars.map((char) => char.romaji));
@@ -412,14 +433,14 @@ export class KanaGame {
   };
 
   private onMove = (e: PointerEvent) => {
-    if (!this.pointerDown || this.finished) return;
+    if (!this.pointerDown || this.finished || this.paused) return;
     this.aimX = this.clampAim(this.toFieldX(e));
   };
 
   private onUp = (e: PointerEvent) => {
     const wasDown = this.pointerDown;
     this.pointerDown = false; // 終了中でも押下状態は必ず解除する
-    if (!wasDown || this.finished) return;
+    if (!wasDown || this.finished || this.paused) return;
     this.aimX = this.clampAim(this.toFieldX(e));
     this.drop();
     if (!this.interacted) {
@@ -429,7 +450,7 @@ export class KanaGame {
   };
 
   private drop() {
-    if (this.finished) return;
+    if (this.finished || this.paused) return;
     const now = performance.now();
     if (now - this.lastDrop < DROP_COOLDOWN) return;
     this.lastDrop = now;
@@ -448,16 +469,16 @@ export class KanaGame {
     this.autoDropDeadline = 0;
   }
 
-  /** 通常は3秒、チャレンジは2秒で次の文字を自動落下させる。 */
-  private scheduleAutoDrop() {
-    if (!this.canvas || this.finished) return;
+  /** すべてのモードで2.5秒後に次の文字を自動落下させる。 */
+  private scheduleAutoDrop(delayOverride?: number) {
+    if (!this.canvas || this.finished || this.paused) return;
     this.clearAutoDropTimer();
-    const delay = this.finalMergeMode === 'pair' ? 2000 : 3000;
+    const delay = delayOverride ?? 2500;
     this.autoDropDeadline = performance.now() + delay;
     this.autoDropTimer = window.setTimeout(() => {
       this.autoDropTimer = null;
       this.autoDropDeadline = 0;
-      if (this.finished) return;
+      if (this.finished || this.paused) return;
       this.pointerDown = false;
       this.drop();
     }, delay);
@@ -619,6 +640,7 @@ export class KanaGame {
 
   private finish() {
     this.finished = true;
+    this.paused = false;
     this.clearAutoDropTimer();
     clearSavedSession();
     const best = Math.max(this.score, loadBest());
@@ -634,9 +656,9 @@ export class KanaGame {
     this.runnerId = requestAnimationFrame(this.loop);
     const dt = Math.min((t - this.lastFrame) / 1000, 0.05);
     this.lastFrame = t;
-    if (!this.finished) {
+    if (!this.finished && !this.paused) {
       this.step(dt);
-    } else {
+    } else if (this.finished) {
       updateParticles(this.particles, dt);
       this.confettiT += dt;
       if (this.confettiT > 0.55) {

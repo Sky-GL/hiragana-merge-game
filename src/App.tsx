@@ -52,6 +52,7 @@ export default function App() {
   const [unlocked, setUnlocked] = useState(0);
   const [showHint, setShowHint] = useState(true);
   const [finished, setFinished] = useState(false);
+  const [paused, setPaused] = useState(false);
   const [progress, setProgress] = useState<Progress>({ stageLayoutVersion: 5, level: 1, exp: 0, unlockedStages: 1, stageCompletions: {} });
   const [stageId, setStageId] = useState(1);
   const [toast, setToast] = useState<{ level: number; kind: number | null } | null>(null);
@@ -93,6 +94,7 @@ export default function App() {
   const handleFinish = useCallback((s: number, b: number) => {
     setScore(s);
     setBest(b);
+    setPaused(false);
     setFinished(true);
   }, []);
 
@@ -157,6 +159,7 @@ export default function App() {
         setStageId(nextStageId);
         setUnlocked(0);
         setFinished(false);
+        setPaused(false);
         // 指の案内は最初のあ行だけ。以降の行では盤面を隠さない。
         setShowHint(false);
         preloadClips(nextStage.chars.map((char) => char.romaji));
@@ -208,6 +211,7 @@ export default function App() {
     setBest(0);
     setUnlocked(0);
     setFinished(false);
+    setPaused(false);
     setShowHint(true);
     setClearToast(null);
     setPhase('play');
@@ -222,6 +226,7 @@ export default function App() {
     unlockSpeech();
     unlockSfx();
     setFinished(false);
+    setPaused(false);
     setScore(0);
     setUnlocked(0);
     setClearToast(null);
@@ -241,6 +246,7 @@ export default function App() {
 
   const goHome = () => {
     setFinished(false);
+    setPaused(false);
     setScore(0);
     setShowHint(true);
     setTiltEnabled(false);
@@ -256,6 +262,13 @@ export default function App() {
     stageClearPending.current = false;
     gameRef.current?.restart();
     setPhase('title');
+  };
+
+  const togglePause = () => {
+    if (finished) return;
+    if (paused) gameRef.current?.resume();
+    else gameRef.current?.pause();
+    setPaused((value) => !value);
   };
 
   if (phase === 'title') {
@@ -307,6 +320,14 @@ export default function App() {
             className="rounded-full border border-white/70 bg-white/45 px-3 py-1.5 text-xs font-black text-[#6B4E68] shadow-sm backdrop-blur-md active:scale-95"
           >
             HOME
+          </button>
+          <button
+            onClick={togglePause}
+            aria-label={paused ? 'Resume game' : 'Pause game'}
+            title={paused ? 'RESUME' : 'PAUSE'}
+            className="flex h-9 w-9 items-center justify-center rounded-full border border-white/70 bg-white/45 text-base font-black text-[#6B4E68] shadow-sm backdrop-blur-md active:scale-95"
+          >
+            {paused ? '▶' : 'Ⅱ'}
           </button>
           <button
             onClick={resetGame}
@@ -368,6 +389,17 @@ export default function App() {
           />
           <HandHint visible={showHint && !finished && !help} />
         </div>
+        {paused && (
+          <div className="absolute inset-0 z-30 flex flex-col items-center justify-center rounded-[30px] bg-[#6B4E68]/35 backdrop-blur-sm">
+            <p className="font-round text-3xl font-black tracking-[0.12em] text-white drop-shadow">PAUSED</p>
+            <button
+              onClick={togglePause}
+              className="mt-4 rounded-full border-2 border-white bg-gradient-to-b from-[#FFC6DF] to-[#F58FB0] px-8 py-3 font-round text-lg font-black text-white shadow-lg active:scale-95"
+            >
+              ▶ RESUME
+            </button>
+          </div>
+        )}
         <LevelUpToast
           level={toast?.level ?? null}
           unlockedChar={toast?.kind != null ? stage.chars[toast.kind] ?? null : null}
