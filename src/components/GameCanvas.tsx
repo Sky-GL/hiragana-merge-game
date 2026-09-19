@@ -22,6 +22,7 @@ export default function GameCanvas({ callbacks, onReady }: Props) {
       onFirstInteract: () => cbRef.current.onFirstInteract(),
       onUnlockLevel: (l) => cbRef.current.onUnlockLevel(l),
       onExp: (g) => cbRef.current.onExp(g),
+      onChallengeBonus: (points) => cbRef.current.onChallengeBonus(points),
       onStageClear: (clearedByFinalPair) => cbRef.current.onStageClear(clearedByFinalPair),
     });
     game.mount(canvas);

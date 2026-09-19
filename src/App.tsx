@@ -126,11 +126,11 @@ export default function App() {
       const { next: challengeProgress } = recordStageCompletion(p, current);
       progressRef.current = challengeProgress;
       setProgress(challengeProgress);
-      gameRef.current?.addBonusScore(300);
+      const finalKana = getStage(current).chars.slice(-1)[0].kana;
       setClearToast({
         stage: getStage(current),
         title: 'CHALLENGE START!',
-        subtitle: '+300 BONUS • 8 お TO CLEAR',
+        subtitle: 'BUILD 16 ' + finalKana + ' TO CLEAR',
       });
       clearTimer.current = window.setTimeout(() => setClearToast(null), 3000);
       gameRef.current?.setChallengeMode(true, progressRef.current.level);
@@ -169,6 +169,18 @@ export default function App() {
       stageClearPending.current = false;
     }
     clearTimer.current = window.setTimeout(() => setClearToast(null), 3000);
+  }, []);
+
+  const handleChallengeBonus = useCallback((points: number) => {
+    const current = stageIdRef.current;
+    const finalKana = getStage(current).chars.slice(-1)[0].kana;
+    setClearToast({
+      stage: getStage(current),
+      title: 'RAINBOW BONUS!',
+      subtitle: '+' + points + ' • 8 ' + finalKana + ' REACHED',
+    });
+    if (clearTimer.current !== null) window.clearTimeout(clearTimer.current);
+    clearTimer.current = window.setTimeout(() => setClearToast(null), 2200);
   }, []);
 
   const startGame = () => {
@@ -349,6 +361,7 @@ export default function App() {
               onFirstInteract: () => setShowHint(false),
               onUnlockLevel: (l) => setUnlocked((u) => Math.max(u, l)),
               onExp: handleExp,
+              onChallengeBonus: handleChallengeBonus,
               onStageClear: handleStageClear,
             }}
           />

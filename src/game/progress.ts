@@ -16,7 +16,7 @@ export type Progress = {
 
 /** 次のレベルまでに必要な EXP */
 export function expToNext(level: number) {
-  return 40 + (level - 1) * 35;
+  return 100 + (level - 1) * 90;
 }
 
 export function loadProgress(): Progress {

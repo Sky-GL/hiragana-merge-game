@@ -9,7 +9,7 @@ export function drawJellyBall(
   x: number,
   y: number,
   c: KanaChar,
-  opts: { scale?: number; alpha?: number; squash?: number; finalTier?: 0 | 1 | 2 } = {},
+  opts: { scale?: number; alpha?: number; squash?: number; finalTier?: 0 | 1 | 2 | 3 } = {},
 ) {
   const scale = opts.scale ?? 1;
   const alpha = opts.alpha ?? 1;
@@ -159,6 +159,26 @@ export function drawJellyBall(
     ctx.closePath();
     ctx.fill();
     ctx.stroke();
+    ctx.restore();
+  }
+
+  if (opts.finalTier === 3) {
+    ctx.save();
+    const ring = ctx.createLinearGradient(-r, -r, r, r);
+    ring.addColorStop(0, '#FF92B6');
+    ring.addColorStop(0.28, '#FFD56E');
+    ring.addColorStop(0.52, '#91E7B5');
+    ring.addColorStop(0.76, '#8ACCF6');
+    ring.addColorStop(1, '#CBA4F4');
+    ctx.strokeStyle = ring;
+    ctx.lineWidth = Math.max(3, r * 0.1);
+    ctx.beginPath();
+    ctx.arc(0, 0, r * 0.92, 0, Math.PI * 2);
+    ctx.stroke();
+    ctx.fillStyle = '#FFF6A8';
+    ctx.beginPath();
+    ctx.arc(0, -r * 1.18, r * 0.16, 0, Math.PI * 2);
+    ctx.fill();
     ctx.restore();
   }
 

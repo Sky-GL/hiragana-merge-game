@@ -16,9 +16,17 @@ export default function HowToPlay({ visible, onClose }: Props) {
         <div className="mt-3 rounded-2xl border border-[#FFE6A4] bg-[#FFF9E5] px-3 py-3 text-center">
           <p className="text-[11px] font-black tracking-[0.08em] text-[#B78035]">CHALLENGE RULE</p>
           <p className="mt-1 text-[11px] font-bold leading-relaxed text-[#8A6E55]">
-            お + お → 👑お &nbsp;•&nbsp; 👑お + 👑お → 💎お
+            FINAL + FINAL → 👑 FINAL
             <br />
-            💎お + 💎お → next row! (8 お total)
+            👑 FINAL + 👑 FINAL → 💎 FINAL
+            <br />
+            💎 FINAL + 💎 FINAL → 🌈 FINAL
+            <br />
+            🌈 FINAL + 🌈 FINAL → next row! (16 final letters)
+            <br />
+            🌈 FINAL made = RAINBOW BONUS +300
+            <br />
+            Level up: 100 EXP at Lv 1, +90 EXP each level
           </p>
         </div>
 
