@@ -10,10 +10,19 @@ export default function HowToPlay({ visible, onClose }: Props) {
 
   return (
     <div className="absolute inset-0 z-50 flex items-center justify-center bg-white/40 px-5 backdrop-blur-md">
-      <div className="animate-pop w-full max-w-[330px] rounded-[34px] border border-white/80 bg-white/75 px-6 py-6 shadow-[0_18px_50px_rgba(150,120,185,0.28)] backdrop-blur-xl">
+      <div className="animate-pop max-h-[calc(100dvh-32px)] w-full max-w-[330px] overflow-y-auto rounded-[34px] border border-white/80 bg-white/75 px-6 py-6 shadow-[0_18px_50px_rgba(150,120,185,0.28)] backdrop-blur-xl">
         <h2 className="text-center font-round text-2xl font-black text-[#F58FB0]">How to play</h2>
 
-        <ol className="mt-5 flex flex-col gap-5">
+        <div className="mt-3 rounded-2xl border border-[#FFE6A4] bg-[#FFF9E5] px-3 py-3 text-center">
+          <p className="text-[11px] font-black tracking-[0.08em] text-[#B78035]">CHALLENGE RULE</p>
+          <p className="mt-1 text-[11px] font-bold leading-relaxed text-[#8A6E55]">
+            お + お → 👑お &nbsp;•&nbsp; 👑お + 👑お → 💎お
+            <br />
+            💎お + 💎お → next row! (8 お total)
+          </p>
+        </div>
+
+        <ol className="mt-4 flex flex-col gap-3">
           <Step n={1} text="Tap or drag, then release to drop a letter.">
             <div className="flex items-center gap-2">
               <Ball level={0} />
@@ -47,15 +56,6 @@ export default function HowToPlay({ visible, onClose }: Props) {
             Keep the letters below the dotted line.
             <br />
             No penalties, no losing — just keep popping! 💕
-          </p>
-        </div>
-
-        <div className="mt-3 rounded-2xl border border-[#FFE6A4] bg-[#FFF9E5] px-3 py-3 text-center">
-          <p className="text-[11px] font-black tracking-[0.08em] text-[#B78035]">CHALLENGE UNLOCK</p>
-          <p className="mt-1 text-[11px] font-bold leading-relaxed text-[#8A6E55]">
-            お + お → 👑お &nbsp;•&nbsp; 👑お + 👑お → 💎お
-            <br />
-            💎お + 💎お → next row! (8 お total)
           </p>
         </div>
 
