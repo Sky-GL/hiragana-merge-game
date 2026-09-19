@@ -51,6 +51,7 @@ export default function App() {
   const [unlocked, setUnlocked] = useState(0);
   const [showHint, setShowHint] = useState(true);
   const [finished, setFinished] = useState(false);
+  const [gameComplete, setGameComplete] = useState(false);
   const [paused, setPaused] = useState(false);
   const [progress, setProgress] = useState<Progress>({ stageLayoutVersion: 8, level: 1, exp: 0, unlockedStages: 1, stageCompletions: {} });
   const [stageId, setStageId] = useState(1);
@@ -146,6 +147,8 @@ export default function App() {
         stageClearPending.current = false;
       }, 650);
     } else {
+      // 最終ステージを虹同士で完成させた時だけ、特別な祝福画面にする。
+      setGameComplete(true);
       gameRef.current?.completeAllRows();
       stageClearPending.current = false;
     }
@@ -188,6 +191,7 @@ export default function App() {
     setBest(0);
     setUnlocked(0);
     setFinished(false);
+    setGameComplete(false);
     setPaused(false);
     setShowHint(true);
     setClearToast(null);
@@ -203,6 +207,7 @@ export default function App() {
     unlockSpeech();
     unlockSfx();
     setFinished(false);
+    setGameComplete(false);
     setPaused(false);
     setScore(0);
     setUnlocked(0);
@@ -223,6 +228,7 @@ export default function App() {
 
   const goHome = () => {
     setFinished(false);
+    setGameComplete(false);
     setPaused(false);
     setScore(0);
     setShowHint(true);
@@ -382,6 +388,7 @@ export default function App() {
         <StageClearToast stage={clearToast?.stage ?? null} title={clearToast?.title ?? ''} subtitle={clearToast?.subtitle} />
         <ResultOverlay
           visible={finished}
+          grandFinale={gameComplete}
           chars={stage.chars}
           score={score}
           best={best}
