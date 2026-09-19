@@ -17,7 +17,7 @@ const OVER_GRACE = 1600; // ms
 const FIXED_STEP = 1000 / 60; // 物理は固定ステップ（端末のfpsで挙動を変えない）
 const BEST_KEY = 'kanapop.best';
 const SESSION_KEY = 'kanapop.session';
-const SESSION_VERSION = 16;
+const SESSION_VERSION = 17;
 
 type SavedBall = {
   x: number;
@@ -533,22 +533,31 @@ export class KanaGame {
       const a = balls[i];
       const pa = plug(a);
       if (!pa || pa.merging) continue;
-      const radiusA = this.chars[pa.level]?.radius;
+      const radiusA = this.mergeRadius(pa);
       if (!radiusA) continue;
       for (let j = i + 1; j < balls.length; j++) {
         const b = balls[j];
         const pb = plug(b);
         if (!pb || pb.merging || pa.level !== pb.level || pa.finalTier !== pb.finalTier) continue;
-        const radiusB = this.chars[pb.level]?.radius;
+        const radiusB = this.mergeRadius(pb);
         if (!radiusB) continue;
         const dx = a.position.x - b.position.x;
         const dy = a.position.y - b.position.y;
-        // 最終文字だけは、描画上の接触と物理円の数px差を吸収する。
-        const mergeTolerance = pa.level === this.maxLevel ? 8 : 0;
+        // 最終文字だけは、描画で膨らんで見える大きさまで合体範囲を広げる。
+        const mergeTolerance = pa.level === this.maxLevel ? 1 : 0;
         const touchingDistance = radiusA + radiusB + mergeTolerance;
         if (dx * dx + dy * dy <= touchingDistance * touchingDistance && this.tryMergePair(a, b)) return;
       }
     }
+  }
+
+  /** 描画時のポン演出と同じ最大軸半径。最終文字の見た目と判定を一致させる。 */
+  private mergeRadius(p: Plugin) {
+    const radius = this.chars[p.level]?.radius;
+    if (!radius) return 0;
+    if (p.level !== this.maxLevel) return radius;
+    const pop = popCurve(p.pop);
+    return radius * (1 + 0.2 * pop) * (1 + 0.05 * pop);
   }
 
   /** 衝突と同フレームで発声・エフェクト（0.1秒以内の即時強化） */
