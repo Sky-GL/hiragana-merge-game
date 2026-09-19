@@ -10,13 +10,14 @@ export const FIELD_W = 420;
 export const FIELD_H = 660;
 const WALL = 60;
 const TOP_LINE = 118; // このラインを一定時間超えたら Finish
+const TOP_LINE_OVERLAP = 16; // 線へ明確に入り込むまで Finish にしない
 const PREVIEW_Y = 62;
 const DROP_COOLDOWN = 380;
 const OVER_GRACE = 1600; // ms
 const FIXED_STEP = 1000 / 60; // 物理は固定ステップ（端末のfpsで挙動を変えない）
 const BEST_KEY = 'kanapop.best';
 const SESSION_KEY = 'kanapop.session';
-const SESSION_VERSION = 10;
+const SESSION_VERSION = 11;
 
 type SavedBall = {
   x: number;
@@ -633,7 +634,7 @@ export class KanaGame {
         continue;
       }
       p.pop = Math.max(0, p.pop - dt * 3.2);
-      if (now - p.born > 900 && b.position.y - this.chars[p.level].radius < TOP_LINE) over = true;
+      if (now - p.born > 900 && b.position.y - this.chars[p.level].radius < TOP_LINE - TOP_LINE_OVERLAP) over = true;
     }
     this.overTime = over ? this.overTime + dt * 1000 : 0;
     if (!this.finished && this.overTime > OVER_GRACE) this.finish();

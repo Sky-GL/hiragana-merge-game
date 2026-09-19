@@ -33,19 +33,8 @@ const VOICE_ROWS = [
   ['26-KANA POP.wav', ['pya', 'pyu', 'pyo']],
 ] as const;
 
-// 今回収録された文字だけを鳴らす。未収録の濁音・拗音などは無音のままにする。
-const PROVIDED_ROMAJIS = new Set([
-  'a', 'i', 'u', 'e', 'o', 'ka', 'ki', 'ku', 'ke', 'ko',
-  'sa', 'shi', 'su', 'se', 'so', 'ta', 'chi', 'tsu', 'te', 'to',
-  'na', 'ni', 'nu', 'ne', 'no', 'ha', 'hi', 'fu', 'he', 'ho',
-  'ma', 'mi', 'mu', 'me', 'mo', 'ya', 'yu', 'yo', 'ra', 'ri',
-  'ru', 're', 'ro', 'wa', 'wo', 'n', 'ga', 'ji', 'da', 'de',
-  'do', 'ba', 'po', 'sha', 'sho', 'cho',
-]);
-
 const voiceFileByRomaji: Record<string, string> = Object.fromEntries(
   VOICE_ROWS.flatMap(([, romajis]) => romajis
-    .filter((romaji) => PROVIDED_ROMAJIS.has(romaji))
     .map((romaji) => [romaji, `clips/${romaji}.wav`])),
 );
 
