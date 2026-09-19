@@ -10,6 +10,7 @@ export type KanaChar = {
 
 export type Stage = {
   id: number;
+  label: string;
   /** 画面に出すのはこの代表文字だけ（説明文は使わない） */
   cover: string;
   chars: KanaChar[];
@@ -76,6 +77,7 @@ function radiusFor(i: number) {
 
 export const STAGES: Stage[] = STAGE_SOURCE.map((pairs, si) => ({
   id: si + 1,
+  label: pairs[0][1].toUpperCase() + '-ROW',
   cover: pairs[0][0],
   chars: pairs.map(([kana, romaji], i) => ({
     level: i,

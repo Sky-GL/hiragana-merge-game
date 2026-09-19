@@ -1,9 +1,9 @@
 import { shade, type Stage } from '../game/stages';
 
-type Props = { stage: Stage | null };
+type Props = { stage: Stage | null; title: string; subtitle?: string };
 
 /** ステージクリア演出。次に解放された行を代表文字で見せる（説明文なし） */
-export default function StageClearToast({ stage }: Props) {
+export default function StageClearToast({ stage, title, subtitle }: Props) {
   if (!stage) return null;
 
   return (
@@ -11,8 +11,9 @@ export default function StageClearToast({ stage }: Props) {
       <div className="animate-pop flex flex-col items-center gap-2 rounded-[30px] border border-white/80 bg-white/85 px-8 py-5 shadow-[0_16px_40px_rgba(150,120,185,0.32)] backdrop-blur-xl">
         <div className="flex items-center gap-2">
           <span className="text-2xl">🔓</span>
-          <span className="font-round text-2xl font-black tracking-wide text-[#F58FB0]">Stage {stage.id}</span>
+          <span className="font-round text-xl font-black tracking-wide text-[#F58FB0]">{title}</span>
         </div>
+        {subtitle && <span className="text-xs font-black tracking-[0.12em] text-[#A98EBE]">{subtitle}</span>}
         <div className="flex items-center gap-1.5">
           {stage.chars.slice(0, 5).map((ch) => (
             <span

@@ -17,7 +17,7 @@ const OVER_GRACE = 1600; // ms
 const FIXED_STEP = 1000 / 60; // 物理は固定ステップ（端末のfpsで挙動を変えない）
 const BEST_KEY = 'kanapop.best';
 const SESSION_KEY = 'kanapop.session';
-const SESSION_VERSION = 2;
+const SESSION_VERSION = 3;
 
 type SavedBall = {
   x: number;
@@ -55,7 +55,7 @@ export function loadSavedStage(): number | null {
   return loadSession()?.stageId ?? null;
 }
 
-function clearSession() {
+export function clearSavedSession() {
   try {
     localStorage.removeItem(SESSION_KEY);
   } catch {
@@ -238,7 +238,7 @@ export class KanaGame {
     this.confettiT = 0;
     this.unlocked = 0;
     this.resetSpawnSequence();
-    if (clearSaved) clearSession();
+    if (clearSaved) clearSavedSession();
     this.nextLevel = this.rollSpawn();
     this.cb.onScore(0);
     this.cb.onNext(this.nextLevel);
@@ -277,7 +277,7 @@ export class KanaGame {
     const saved = loadSession();
     if (!saved || saved.stageId !== this.stageId || saved.balls.length === 0) return false;
     if (saved.nextLevel < 0 || saved.nextLevel > this.maxLevel || saved.unlocked < 0 || saved.unlocked > this.maxLevel) {
-      clearSession();
+      clearSavedSession();
       return false;
     }
     for (const b of Matter.Composite.allBodies(this.engine.world)) {
@@ -287,7 +287,7 @@ export class KanaGame {
     for (const ball of saved.balls) {
       if (!Number.isInteger(ball.level) || ball.level < 0 || ball.level > this.maxLevel
         || !Number.isFinite(ball.x) || !Number.isFinite(ball.y) || !Number.isFinite(ball.vx) || !Number.isFinite(ball.vy)) {
-        clearSession();
+        clearSavedSession();
         return false;
       }
       const body = this.makeBall(Math.max(0, Math.min(FIELD_W, ball.x)), Math.max(0, Math.min(FIELD_H, ball.y)), ball.level);
@@ -445,7 +445,7 @@ export class KanaGame {
 
   private finish() {
     this.finished = true;
-    clearSession();
+    clearSavedSession();
     const best = Math.max(this.score, loadBest());
     saveBest(best);
     playFinish();

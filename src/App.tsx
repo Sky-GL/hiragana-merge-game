@@ -8,20 +8,24 @@ import LevelUpToast from './components/LevelUpToast';
 import ResultOverlay from './components/ResultOverlay';
 import StageClearToast from './components/StageClearToast';
 import TitleScreen from './components/TitleScreen';
-import { loadBest, loadSavedStage, type KanaGame } from './game/engine';
+import { clearSavedSession, loadBest, loadSavedStage, type KanaGame } from './game/engine';
 import {
   addExp,
   loadProgress,
   newlyUnlockedKind,
+  recordStageCompletion,
   unlockNextStage,
   type Progress,
 } from './game/progress';
-import { getStage, shade, STAGE_COUNT, STAGES } from './game/stages';
+import { getStage, shade, STAGE_COUNT, type Stage } from './game/stages';
 import { initSpeech, speakKana, unlockSpeech } from './game/speech';
 import { unlockSfx } from './game/sfx';
 import { preloadClips } from './game/voiceClips';
 
 const SEEN_KEY = 'kanapop.seenHelp';
+const CHALLENGE_ROUNDS = 2;
+
+type ClearToast = { stage: Stage; title: string; subtitle?: string };
 
 function hasSeenHelp() {
   try {
@@ -49,10 +53,10 @@ export default function App() {
   const [unlocked, setUnlocked] = useState(0);
   const [showHint, setShowHint] = useState(true);
   const [finished, setFinished] = useState(false);
-  const [progress, setProgress] = useState<Progress>({ stageLayoutVersion: 2, level: 1, exp: 0, unlockedStages: 1 });
+  const [progress, setProgress] = useState<Progress>({ stageLayoutVersion: 3, level: 1, exp: 0, unlockedStages: 1, stageCompletions: {} });
   const [stageId, setStageId] = useState(1);
   const [toast, setToast] = useState<{ level: number; kind: number | null } | null>(null);
-  const [clearToast, setClearToast] = useState<number | null>(null);
+  const [clearToast, setClearToast] = useState<ClearToast | null>(null);
   const [tiltEnabled, setTiltEnabled] = useState(false);
 
   const stage = getStage(stageId);
@@ -64,6 +68,8 @@ export default function App() {
   stageIdRef.current = stageId;
   const toastTimer = useRef<number | null>(null);
   const clearTimer = useRef<number | null>(null);
+  const challengeRestartTimer = useRef<number | null>(null);
+  const stageClearPending = useRef(false);
 
   useEffect(() => {
     initSpeech();
@@ -80,6 +86,7 @@ export default function App() {
     return () => {
       if (toastTimer.current !== null) window.clearTimeout(toastTimer.current);
       if (clearTimer.current !== null) window.clearTimeout(clearTimer.current);
+      if (challengeRestartTimer.current !== null) window.clearTimeout(challengeRestartTimer.current);
     };
   }, []);
 
@@ -102,17 +109,47 @@ export default function App() {
     }
   }, []);
 
-  /** 最終文字まで育てたら次のステージを解放（ゲームはそのまま続けられる） */
+  /** 最終文字を2回作るチャレンジを通過したら次のステージを解放する */
   const handleStageClear = useCallback(() => {
+    if (stageClearPending.current) return;
     const p = progressRef.current;
     const current = stageIdRef.current;
-    if (current < p.unlockedStages || p.unlockedStages >= STAGE_COUNT) return; // 解放済みなら何もしない
-    const next = unlockNextStage(p, STAGE_COUNT);
-    progressRef.current = next;
-    setProgress(next);
-    setClearToast(next.unlockedStages);
+    if (current < p.unlockedStages) return; // 解放済み行の遊び直しでは進行しない
+
+    stageClearPending.current = true;
+    const { next: completedProgress, completions } = recordStageCompletion(p, current);
+    progressRef.current = completedProgress;
+    setProgress(completedProgress);
     if (clearTimer.current !== null) window.clearTimeout(clearTimer.current);
+    if (completions < CHALLENGE_ROUNDS) {
+      setClearToast({
+        stage: getStage(current),
+        title: getStage(current).label + ' CHALLENGE',
+        subtitle: completions + ' / ' + CHALLENGE_ROUNDS + ' COMPLETE',
+      });
+      clearSavedSession();
+      clearTimer.current = window.setTimeout(() => setClearToast(null), 3000);
+      challengeRestartTimer.current = window.setTimeout(() => {
+        gameRef.current?.restart();
+        setUnlocked(0);
+        setFinished(false);
+        stageClearPending.current = false;
+        challengeRestartTimer.current = null;
+      }, 650);
+      return;
+    }
+
+    if (current < STAGE_COUNT) {
+      const unlockedProgress = unlockNextStage(completedProgress, STAGE_COUNT);
+      progressRef.current = unlockedProgress;
+      setProgress(unlockedProgress);
+      const nextStage = getStage(unlockedProgress.unlockedStages);
+      setClearToast({ stage: nextStage, title: nextStage.label + ' UNLOCKED' });
+    } else {
+      setClearToast({ stage: getStage(current), title: 'ALL ROWS COMPLETE!' });
+    }
     clearTimer.current = window.setTimeout(() => setClearToast(null), 3000);
+    stageClearPending.current = false;
   }, []);
 
   const startGame = () => {
@@ -149,6 +186,11 @@ export default function App() {
       window.clearTimeout(clearTimer.current);
       clearTimer.current = null;
     }
+    if (challengeRestartTimer.current !== null) {
+      window.clearTimeout(challengeRestartTimer.current);
+      challengeRestartTimer.current = null;
+    }
+    stageClearPending.current = false;
     gameRef.current?.restart();
     setPhase('title');
   };
@@ -253,7 +295,7 @@ export default function App() {
           level={toast?.level ?? null}
           unlockedChar={toast?.kind != null ? stage.chars[toast.kind] ?? null : null}
         />
-        <StageClearToast stage={clearToast ? STAGES[clearToast - 1] : null} />
+        <StageClearToast stage={clearToast?.stage ?? null} title={clearToast?.title ?? ''} subtitle={clearToast?.subtitle} />
         <ResultOverlay
           visible={finished}
           chars={stage.chars}

@@ -2,7 +2,7 @@
 // レベルが上がるほど「出てくる文字の種類」が増える = 自然に難しくなる。
 // 減点・降格は一切なし（全肯定設計）。
 const KEY = 'kanapop.progress';
-const STAGE_LAYOUT_VERSION = 2;
+const STAGE_LAYOUT_VERSION = 3;
 
 export type Progress = {
   stageLayoutVersion: number;
@@ -10,6 +10,8 @@ export type Progress = {
   exp: number;
   /** 解放済みステージ数（1 なら最初のステージだけ） */
   unlockedStages: number;
+  /** 行ごとのチャレンジ完了回数 */
+  stageCompletions: Record<number, number>;
 };
 
 /** 次のレベルまでに必要な EXP */
@@ -31,13 +33,16 @@ export function loadProgress(): Progress {
           level: Math.min(level, 99),
           exp,
           unlockedStages: Number.isFinite(us) && us >= 1 ? us : 1,
+          stageCompletions: typeof p.stageCompletions === 'object' && p.stageCompletions !== null
+            ? p.stageCompletions as Record<number, number>
+            : {},
         };
       }
     }
   } catch {
     /* 壊れていたら初期値から */
   }
-  return { stageLayoutVersion: STAGE_LAYOUT_VERSION, level: 1, exp: 0, unlockedStages: 1 };
+  return { stageLayoutVersion: STAGE_LAYOUT_VERSION, level: 1, exp: 0, unlockedStages: 1, stageCompletions: {} };
 }
 
 export function saveProgress(p: Progress) {
@@ -68,6 +73,17 @@ export function unlockNextStage(p: Progress, total: number): Progress {
   const next = { ...p, unlockedStages: Math.min(total, p.unlockedStages + 1) };
   saveProgress(next);
   return next;
+}
+
+/** 1行を最後まで作った回数を記録する。2回目で次の行を解放する。 */
+export function recordStageCompletion(p: Progress, stageId: number): { next: Progress; completions: number } {
+  const completions = Math.min(2, (p.stageCompletions[stageId] ?? 0) + 1);
+  const next = {
+    ...p,
+    stageCompletions: { ...p.stageCompletions, [stageId]: completions },
+  };
+  saveProgress(next);
+  return { next, completions };
 }
 
 /** そのレベルで出現する文字の抽選プール（小さい文字ほど高確率） */
