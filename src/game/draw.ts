@@ -171,14 +171,20 @@ export function drawJellyBall(
     ring.addColorStop(0.76, '#8ACCF6');
     ring.addColorStop(1, '#CBA4F4');
     ctx.strokeStyle = ring;
-    ctx.lineWidth = Math.max(3, r * 0.1);
+    ctx.lineWidth = Math.max(4, r * 0.16);
     ctx.beginPath();
-    ctx.arc(0, 0, r * 0.92, 0, Math.PI * 2);
+    ctx.arc(0, 0, r * 0.94, 0, Math.PI * 2);
     ctx.stroke();
-    ctx.fillStyle = '#FFF6A8';
+    ctx.globalAlpha = 0.55;
+    ctx.lineWidth = Math.max(1.5, r * 0.035);
     ctx.beginPath();
-    ctx.arc(0, -r * 1.18, r * 0.16, 0, Math.PI * 2);
-    ctx.fill();
+    ctx.arc(0, 0, r * 0.78, 0, Math.PI * 2);
+    ctx.stroke();
+    ctx.globalAlpha = 1;
+    ctx.font = `${Math.max(16, r * 0.5)}px sans-serif`;
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText('🌈', 0, -r * 1.18);
     ctx.restore();
   }
 

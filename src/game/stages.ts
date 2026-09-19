@@ -28,9 +28,8 @@ const STAGE_PALETTES = [
   ['#A9E9E4', '#FFF2A3', '#FFB6C1', '#C9D8F7', '#FFD1BA'],
   ['#CFE6AE', '#F7A8C0', '#C1E3FE', '#FFC6DF', '#D9C7F7'],
   ['#FFDFA6', '#B9F3CC', '#D9C7F7', '#FFF2A3', '#C9D8F7'],
-  ['#F7A8C0', '#A9E9E4', '#FFF2A3'],
-  ['#C9D8F7', '#FFD1BA', '#CFE6AE', '#C1E3FE', '#FFC6DF'],
-  ['#D9C7F7', '#FFB6C1', '#A9E9E4'],
+  ['#F7A8C0', '#A9E9E4', '#FFF2A3', '#C9D8F7', '#FFD1BA', '#CFE6AE'],
+  ['#C1E3FE', '#FFC6DF', '#D9C7F7', '#FFB6C1', '#A9E9E4'],
 ] as const;
 
 const R_MIN = 26;
@@ -48,10 +47,12 @@ const STAGE_SOURCE: Pair[][] = [
   [['な','na'],['に','ni'],['ぬ','nu'],['ね','ne'],['の','no']],
   [['は','ha'],['ひ','hi'],['ふ','fu'],['へ','he'],['ほ','ho']],
   [['ま','ma'],['み','mi'],['む','mu'],['め','me'],['も','mo']],
-  [['や','ya'],['ゆ','yu'],['よ','yo']],
+  // 3文字だけの行は組にして、短すぎるステージを作らない。
+  [['や','ya'],['ゆ','yu'],['よ','yo'],['わ','wa'],['を','wo'],['ん','n']],
   [['ら','ra'],['り','ri'],['る','ru'],['れ','re'],['ろ','ro']],
-  [['わ','wa'],['を','wo'],['ん','n']],
 ];
+
+const STAGE_LABELS = ['A-ROW', 'K-ROW', 'S-ROW', 'T-ROW', 'N-ROW', 'H-ROW', 'M-ROW', 'Y & W-ROW', 'R-ROW'];
 
 /** 10段階ステージの成長曲線を基準にする。行別の短いステージで最終文字だけ巨大化させない。 */
 function radiusFor(i: number) {
@@ -60,7 +61,7 @@ function radiusFor(i: number) {
 
 export const STAGES: Stage[] = STAGE_SOURCE.map((pairs, si) => ({
   id: si + 1,
-  label: pairs[0][1].toUpperCase() + '-ROW',
+  label: STAGE_LABELS[si],
   cover: pairs[0][0],
   chars: pairs.map(([kana, romaji], i) => ({
     level: i,

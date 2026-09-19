@@ -16,7 +16,7 @@ const OVER_GRACE = 1600; // ms
 const FIXED_STEP = 1000 / 60; // 物理は固定ステップ（端末のfpsで挙動を変えない）
 const BEST_KEY = 'kanapop.best';
 const SESSION_KEY = 'kanapop.session';
-const SESSION_VERSION = 9;
+const SESSION_VERSION = 10;
 
 type SavedBall = {
   x: number;
@@ -307,6 +307,17 @@ export class KanaGame {
     this.sessionSaveSuspended = true;
     this.clearAutoDropTimer();
     clearSavedSession();
+  }
+
+  /** 最終行まで完了したら、残ったボールも消してゲームを締める。 */
+  completeAllRows() {
+    this.prepareStageAdvance();
+    for (const body of Matter.Composite.allBodies(this.engine.world)) {
+      if (body.isStatic) continue;
+      burst(this.particles, body.position.x, body.position.y, 1.2);
+      Matter.Composite.remove(this.engine.world, body);
+    }
+    this.finish();
   }
 
   pause() {

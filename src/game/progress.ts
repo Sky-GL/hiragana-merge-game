@@ -2,7 +2,7 @@
 // レベルが上がるほど「出てくる文字の種類」が増える = 自然に難しくなる。
 // 減点・降格は一切なし（全肯定設計）。
 const KEY = 'kanapop.progress';
-const STAGE_LAYOUT_VERSION = 5;
+const STAGE_LAYOUT_VERSION = 6;
 
 export type Progress = {
   stageLayoutVersion: number;
@@ -27,12 +27,15 @@ export function loadProgress(): Progress {
       const level = Number(p.level);
       const exp = Number(p.exp);
       const us = Number(p.unlockedStages);
-      if (p.stageLayoutVersion === STAGE_LAYOUT_VERSION && Number.isFinite(level) && level >= 1 && Number.isFinite(exp) && exp >= 0) {
+      const layoutVersion = Number(p.stageLayoutVersion);
+      if ((layoutVersion === 5 || layoutVersion === STAGE_LAYOUT_VERSION) && Number.isFinite(level) && level >= 1 && Number.isFinite(exp) && exp >= 0) {
+        // v6: や行+わ行を1ステージに統合。旧10番は新9番へ丸める。
+        const legacyUnlocked = Number.isFinite(us) && us >= 1 ? us : 1;
         return {
           stageLayoutVersion: STAGE_LAYOUT_VERSION,
           level: Math.min(level, 99),
           exp,
-          unlockedStages: Number.isFinite(us) && us >= 1 ? us : 1,
+          unlockedStages: layoutVersion === 5 ? Math.min(9, legacyUnlocked) : legacyUnlocked,
           stageCompletions: typeof p.stageCompletions === 'object' && p.stageCompletions !== null
             ? p.stageCompletions as Record<number, number>
             : {},

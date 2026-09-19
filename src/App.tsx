@@ -52,7 +52,7 @@ export default function App() {
   const [showHint, setShowHint] = useState(true);
   const [finished, setFinished] = useState(false);
   const [paused, setPaused] = useState(false);
-  const [progress, setProgress] = useState<Progress>({ stageLayoutVersion: 5, level: 1, exp: 0, unlockedStages: 1, stageCompletions: {} });
+  const [progress, setProgress] = useState<Progress>({ stageLayoutVersion: 6, level: 1, exp: 0, unlockedStages: 1, stageCompletions: {} });
   const [stageId, setStageId] = useState(1);
   const [toast, setToast] = useState<{ level: number; kind: number | null } | null>(null);
   const [clearToast, setClearToast] = useState<ClearToast | null>(null);
@@ -146,7 +146,7 @@ export default function App() {
         stageClearPending.current = false;
       }, 650);
     } else {
-      setClearToast({ stage: getStage(current), title: 'ALL ROWS COMPLETE!' });
+      gameRef.current?.completeAllRows();
       stageClearPending.current = false;
     }
     clearTimer.current = window.setTimeout(() => setClearToast(null), 3000);
@@ -179,7 +179,7 @@ export default function App() {
     clearProgress();
     clearSavedSession();
     clearBest();
-    const fresh: Progress = { stageLayoutVersion: 5, level: 1, exp: 0, unlockedStages: 1, stageCompletions: {} };
+    const fresh: Progress = { stageLayoutVersion: 6, level: 1, exp: 0, unlockedStages: 1, stageCompletions: {} };
     progressRef.current = fresh;
     setProgress(fresh);
     stageIdRef.current = 1;
@@ -286,7 +286,11 @@ export default function App() {
           <span className="text-base">⭐</span>
           <span className="font-round text-lg font-black leading-none text-[#6B4E68]">{score}</span>
         </div>
-        <div className="flex shrink-0 items-center gap-0.5">
+        <div className="flex min-w-0 shrink-0 items-center gap-0.5">
+          <div className="flex h-8 items-center gap-1 rounded-full border border-white/70 bg-white/45 px-2 text-[#6B4E68] shadow-sm backdrop-blur-md" title="BEST SCORE">
+            <span className="text-sm">👑</span>
+            <span className="font-round text-xs font-black leading-none">{best}</span>
+          </div>
           <button
             onClick={goHome}
             aria-label="Return to home"
