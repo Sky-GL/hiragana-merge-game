@@ -28,6 +28,8 @@ export default function HowToPlay({ visible, onClose }: Props) {
             <br />
             Final badges: 1 → 👑2 → 💎4 → 🌈8. Match the same badge.
             <br />
+            Matching FINAL balls snap together when close.
+            <br />
             🌈 FINAL made = RAINBOW BONUS +300
             <br />
             Level up: 100 EXP at Lv 1, +90 EXP each level

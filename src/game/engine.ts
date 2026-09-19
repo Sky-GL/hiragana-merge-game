@@ -14,6 +14,7 @@ const TOP_LINE_OVERLAP = 16; // 線へ明確に入り込むまで Finish にし�
 const PREVIEW_Y = 62;
 const DROP_COOLDOWN = 380;
 const OVER_GRACE = 1600; // ms
+const FINAL_MERGE_SNAP_GAP = 16; // スマホ表示で隣接して見える最終文字を吸着させる
 const FIXED_STEP = 1000 / 60; // 物理は固定ステップ（端末のfpsで挙動を変えない）
 const BEST_KEY = 'kanapop.best';
 const SESSION_KEY = 'kanapop.session';
@@ -543,9 +544,12 @@ export class KanaGame {
         if (!radiusB) continue;
         const dx = a.position.x - b.position.x;
         const dy = a.position.y - b.position.y;
-        // 最終文字だけは、描画で膨らんで見える大きさまで合体範囲を広げる。
-        const mergeTolerance = pa.level === this.maxLevel ? 1 : 0;
-        const touchingDistance = radiusA + radiusB + mergeTolerance;
+        // 静止時は小さな隙間を吸着。ポップ中は描画半径を上限にして遠距離合体を防ぐ。
+        const visibleDistance = radiusA + radiusB;
+        const physicalDistance = this.chars[pa.level].radius + this.chars[pb.level].radius;
+        const touchingDistance = pa.level === this.maxLevel
+          ? Math.max(visibleDistance, physicalDistance + FINAL_MERGE_SNAP_GAP)
+          : physicalDistance;
         if (dx * dx + dy * dy <= touchingDistance * touchingDistance && this.tryMergePair(a, b)) return;
       }
     }
