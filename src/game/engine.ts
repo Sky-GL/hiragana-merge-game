@@ -111,7 +111,7 @@ export type GameCallbacks = {
   onUnlockLevel: (level: number) => void;
   onExp: (gain: number) => void;
   onChallengeBonus: (points: number) => void;
-  onStageClear: (clearedByFinalPair: boolean) => void;
+  onStageClear: (clearedByFinalPair: boolean) => boolean;
 };
 
 export class KanaGame {
@@ -645,7 +645,7 @@ export class KanaGame {
     playFinish();
     const last = this.chars[this.maxLevel];
     speakKana(last.kana, { excited: true, romaji: last.romaji });
-    this.cb.onStageClear(true);
+    if (!this.cb.onStageClear(true)) this.stageClearInProgress = false;
   }
 
   private step(dt: number) {
