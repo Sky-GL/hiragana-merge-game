@@ -143,6 +143,7 @@ export default function App() {
     setFinished(false);
     setScore(0);
     setShowHint(true);
+    setTiltEnabled(false);
     gameRef.current?.restart();
     setPhase('title');
   };
@@ -198,13 +199,18 @@ export default function App() {
           </button>
           <button
             onClick={async () => {
+              if (tiltEnabled) {
+                gameRef.current?.disableTilt();
+                setTiltEnabled(false);
+                return;
+              }
               unlockSfx();
               setTiltEnabled(await gameRef.current?.enableTilt() ?? false);
             }}
-            aria-label="Enable tilt controls"
+            aria-label={tiltEnabled ? 'Disable tilt controls' : 'Enable tilt controls'}
             className="rounded-full border border-white/70 bg-white/45 px-3 py-1.5 text-xs font-bold text-[#6B4E68] shadow-sm backdrop-blur-md active:scale-95"
           >
-            {tiltEnabled ? '📱 ON' : '📱 Tilt'}
+            {tiltEnabled ? '📱 Tilt: ON' : '📱 Tilt: OFF'}
           </button>
         </div>
       </div>

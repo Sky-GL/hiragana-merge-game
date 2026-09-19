@@ -217,8 +217,7 @@ export class KanaGame {
     this.canvas?.removeEventListener('pointercancel', this.onUp);
     window.removeEventListener('resize', this.resize);
     window.removeEventListener('pagehide', this.saveSession);
-    window.removeEventListener('deviceorientation', this.onOrientation);
-    window.removeEventListener('deviceorientationabsolute', this.onOrientation);
+    this.disableTilt();
     Matter.Events.off(this.engine, 'collisionStart', this.onCollide);
     Matter.Events.off(this.engine, 'collisionActive', this.onCollide);
     Matter.World.clear(this.engine.world, false);
@@ -263,6 +262,15 @@ export class KanaGame {
     } catch {
       return false;
     }
+  }
+
+  disableTilt() {
+    this.tiltEnabled = false;
+    this.tiltNeutral = null;
+    this.tiltX = 0;
+    this.engine.gravity.x = 0;
+    window.removeEventListener('deviceorientation', this.onOrientation);
+    window.removeEventListener('deviceorientationabsolute', this.onOrientation);
   }
 
   restoreSession(): boolean {
