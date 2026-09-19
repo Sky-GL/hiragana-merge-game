@@ -30,7 +30,9 @@ export default function HowToPlay({ visible, onClose }: Props) {
             <br />
             Auto-drop: 2.5 sec in every mode
             <br />
-            VOICE MIX: balls are 14% smaller
+            VOICE MIX: 5 letters
+            <br />
+            B/P & SHA/CHA: 5 letters
           </p>
         </div>
 

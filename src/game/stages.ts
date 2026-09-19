@@ -24,7 +24,6 @@ const COLOR_BANK = ['#FFB6C1', '#FFD1BA', '#FFF2A3', '#B9F3CC', '#C1E3FE', '#D9C
 
 const R_MIN = 26;
 const R_MAX = 116;
-const VOICE_MIX_RADIUS_SCALE = 0.86;
 
 /** かな + ローマ字（ローマ字は音声ファイル名にもなる） */
 type Pair = [string, string];
@@ -42,14 +41,14 @@ const STAGE_SOURCE: Pair[][] = [
   [['や','ya'],['ゆ','yu'],['よ','yo'],['わ','wa'],['を','wo'],['ん','n']],
   [['ら','ra'],['り','ri'],['る','ru'],['れ','re'],['ろ','ro']],
   // 提供されている濁音・半濁音だけを、短すぎない1ステージにまとめる。
-  [['が','ga'],['じ','ji'],['だ','da'],['で','de'],['ど','do'],['ば','ba'],['ぽ','po']],
+  [['が','ga'],['じ','ji'],['だ','da'],['で','de'],['ど','do']],
   // 提供されている拗音だけを収録する。
-  [['しゃ','sha'],['しょ','sho'],['ちょ','cho']],
+  [['ば','ba'],['ぽ','po'],['しゃ','sha'],['しょ','sho'],['ちょ','cho']],
 ];
 
 const STAGE_LABELS = [
   'A-ROW', 'K-ROW', 'S-ROW', 'T-ROW', 'N-ROW', 'H-ROW', 'M-ROW', 'Y & W-ROW', 'R-ROW',
-  'VOICE MIX', 'SHA & CHA',
+  'VOICE MIX', 'B/P & SHA/CHA',
 ];
 
 function colorFor(stageIndex: number, charIndex: number) {
@@ -62,11 +61,6 @@ function radiusFor(i: number) {
   return Math.round(R_MIN * Math.pow(R_MAX / R_MIN, i / 9));
 }
 
-function radiusForStage(stageIndex: number, charIndex: number) {
-  const scale = stageIndex === 9 ? VOICE_MIX_RADIUS_SCALE : 1;
-  return Math.round(radiusFor(charIndex) * scale);
-}
-
 export const STAGES: Stage[] = STAGE_SOURCE.map((pairs, si) => ({
   id: si + 1,
   label: STAGE_LABELS[si],
@@ -75,7 +69,7 @@ export const STAGES: Stage[] = STAGE_SOURCE.map((pairs, si) => ({
     level: i,
     kana,
     romaji,
-    radius: radiusForStage(si, i),
+    radius: radiusFor(i),
     base: colorFor(si, i),
   })),
 }));
