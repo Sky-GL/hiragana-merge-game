@@ -16,21 +16,22 @@ export type Stage = {
   chars: KanaChar[];
 };
 
-/** パステルキャンディ調。段階インデックスで循環させる */
-const PALETTE = [
-  '#FFB6C1', // ベビーピンク
-  '#FFD1BA', // コーラルピーチ
-  '#FFF2A3', // カスタードイエロー
-  '#B9F3CC', // ピスタチオミント
-  '#C1E3FE', // スカイラベンダー
-  '#D9C7F7', // ライラック
-  '#FFC6DF', // チェリーブロッサム
-  '#A9E9E4', // アクアミント
-  '#FFDFA6', // アプリコット
-  '#CFE6AE', // マッチャ
-  '#F7A8C0', // チェリー
-  '#C9D8F7', // ペリウィンクル
-];
+/**
+ * 行ごとに色相と並びを変える。色が「何番目の文字か」の手がかりにならず、
+ * ひらがなの形・音・並びそのものを見て遊べるようにする。
+ */
+const STAGE_PALETTES = [
+  ['#FFB6C1', '#FFD1BA', '#FFF2A3', '#B9F3CC', '#C1E3FE'],
+  ['#D9C7F7', '#A9E9E4', '#F7A8C0', '#CFE6AE', '#FFDFA6'],
+  ['#FFF2A3', '#C9D8F7', '#FFD1BA', '#FFC6DF', '#B9F3CC'],
+  ['#C1E3FE', '#FFDFA6', '#D9C7F7', '#CFE6AE', '#F7A8C0'],
+  ['#A9E9E4', '#FFF2A3', '#FFB6C1', '#C9D8F7', '#FFD1BA'],
+  ['#CFE6AE', '#F7A8C0', '#C1E3FE', '#FFC6DF', '#D9C7F7'],
+  ['#FFDFA6', '#B9F3CC', '#D9C7F7', '#FFF2A3', '#C9D8F7'],
+  ['#F7A8C0', '#A9E9E4', '#FFF2A3'],
+  ['#C9D8F7', '#FFD1BA', '#CFE6AE', '#C1E3FE', '#FFC6DF'],
+  ['#D9C7F7', '#FFB6C1', '#A9E9E4'],
+] as const;
 
 const R_MIN = 26;
 const R_MAX = 116;
@@ -66,7 +67,7 @@ export const STAGES: Stage[] = STAGE_SOURCE.map((pairs, si) => ({
     kana,
     romaji,
     radius: radiusFor(i),
-    base: PALETTE[i % PALETTE.length],
+    base: STAGE_PALETTES[si][i],
   })),
 }));
 
