@@ -17,6 +17,7 @@ const OVER_GRACE = 1600; // ms
 const FIXED_STEP = 1000 / 60; // 物理は固定ステップ（端末のfpsで挙動を変えない）
 const BEST_KEY = 'kanapop.best';
 const SESSION_KEY = 'kanapop.session';
+const SESSION_VERSION = 2;
 
 type SavedBall = {
   x: number;
@@ -29,6 +30,7 @@ type SavedBall = {
 };
 
 type SavedSession = {
+  version: number;
   stageId: number;
   score: number;
   nextLevel: number;
@@ -41,7 +43,7 @@ function loadSession(): SavedSession | null {
     const raw = localStorage.getItem(SESSION_KEY);
     if (!raw) return null;
     const saved = JSON.parse(raw) as Partial<SavedSession>;
-    if (!Number.isInteger(saved.stageId) || !Number.isFinite(saved.score) || !Number.isInteger(saved.nextLevel)
+    if (saved.version !== SESSION_VERSION || !Number.isInteger(saved.stageId) || !Number.isFinite(saved.score) || !Number.isInteger(saved.nextLevel)
       || !Number.isInteger(saved.unlocked) || !Array.isArray(saved.balls)) return null;
     return saved as SavedSession;
   } catch {
@@ -119,6 +121,7 @@ export class KanaGame {
   private lastSave = 0;
   private tiltX = 0;
   private tiltEnabled = false;
+  private tiltNeutral: number | null = null;
   private cb: GameCallbacks;
 
   constructor(cb: GameCallbacks) {
@@ -250,6 +253,9 @@ export class KanaGame {
     try {
       if (!Orientation) return false;
       if (Orientation.requestPermission && await Orientation.requestPermission() !== 'granted') return false;
+      this.tiltX = 0;
+      this.tiltNeutral = null;
+      this.engine.gravity.x = 0;
       window.addEventListener('deviceorientation', this.onOrientation);
       window.addEventListener('deviceorientationabsolute', this.onOrientation);
       this.tiltEnabled = true;
@@ -466,7 +472,11 @@ export class KanaGame {
     const gamma = event.gamma ?? 0;
     const beta = event.beta ?? 0;
     const lateral = angle === 90 ? beta : angle === 270 ? -beta : gamma;
-    const target = Math.max(-0.75, Math.min(0.75, lateral / 28));
+    if (this.tiltNeutral === null) {
+      this.tiltNeutral = lateral;
+      return;
+    }
+    const target = Math.max(-0.85, Math.min(0.85, (lateral - this.tiltNeutral) / 18));
     this.tiltX += (target - this.tiltX) * 0.18;
     this.engine.gravity.x = Math.abs(this.tiltX) < 0.035 ? 0 : this.tiltX;
   };
@@ -486,7 +496,7 @@ export class KanaGame {
       }));
     if (balls.length === 0) return;
     try {
-      const saved: SavedSession = { stageId: this.stageId, score: this.score, nextLevel: this.nextLevel, unlocked: this.unlocked, balls };
+      const saved: SavedSession = { version: SESSION_VERSION, stageId: this.stageId, score: this.score, nextLevel: this.nextLevel, unlocked: this.unlocked, balls };
       localStorage.setItem(SESSION_KEY, JSON.stringify(saved));
     } catch {
       /* 保存できない環境でもゲームは続行する */

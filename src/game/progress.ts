@@ -2,8 +2,10 @@
 // レベルが上がるほど「出てくる文字の種類」が増える = 自然に難しくなる。
 // 減点・降格は一切なし（全肯定設計）。
 const KEY = 'kanapop.progress';
+const STAGE_LAYOUT_VERSION = 2;
 
 export type Progress = {
+  stageLayoutVersion: number;
   level: number;
   exp: number;
   /** 解放済みステージ数（1 なら最初のステージだけ） */
@@ -23,8 +25,9 @@ export function loadProgress(): Progress {
       const level = Number(p.level);
       const exp = Number(p.exp);
       const us = Number(p.unlockedStages);
-      if (Number.isFinite(level) && level >= 1 && Number.isFinite(exp) && exp >= 0) {
+      if (p.stageLayoutVersion === STAGE_LAYOUT_VERSION && Number.isFinite(level) && level >= 1 && Number.isFinite(exp) && exp >= 0) {
         return {
+          stageLayoutVersion: STAGE_LAYOUT_VERSION,
           level: Math.min(level, 99),
           exp,
           unlockedStages: Number.isFinite(us) && us >= 1 ? us : 1,
@@ -34,7 +37,7 @@ export function loadProgress(): Progress {
   } catch {
     /* 壊れていたら初期値から */
   }
-  return { level: 1, exp: 0, unlockedStages: 1 };
+  return { stageLayoutVersion: STAGE_LAYOUT_VERSION, level: 1, exp: 0, unlockedStages: 1 };
 }
 
 export function saveProgress(p: Progress) {

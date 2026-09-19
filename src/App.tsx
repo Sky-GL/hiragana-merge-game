@@ -49,7 +49,7 @@ export default function App() {
   const [unlocked, setUnlocked] = useState(0);
   const [showHint, setShowHint] = useState(true);
   const [finished, setFinished] = useState(false);
-  const [progress, setProgress] = useState<Progress>({ level: 1, exp: 0, unlockedStages: 1 });
+  const [progress, setProgress] = useState<Progress>({ stageLayoutVersion: 2, level: 1, exp: 0, unlockedStages: 1 });
   const [stageId, setStageId] = useState(1);
   const [toast, setToast] = useState<{ level: number; kind: number | null } | null>(null);
   const [clearToast, setClearToast] = useState<number | null>(null);

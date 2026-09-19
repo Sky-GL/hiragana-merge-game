@@ -23,7 +23,7 @@ export default function TitleScreen({
   const cover = STAGES[0].chars.slice(0, 5);
 
   return (
-    <div className="flex h-full w-full flex-col items-center justify-center gap-5 px-5 py-6">
+    <div className="relative flex h-full w-full flex-col items-center justify-center gap-5 px-5 py-6">
       {/* 跳ねるカバーボール */}
       <div className="flex items-end gap-1">
         {cover.map((c, i) => (
@@ -50,7 +50,6 @@ export default function TitleScreen({
           Kana Pop
         </h1>
         <p className="mt-2 text-sm font-bold tracking-[0.18em] text-[#A98EBE]">MERGE &amp; LEARN JAPANESE</p>
-        <p className="mt-2 text-xs font-bold tracking-[0.12em] text-[#8A6E96]">CREATED BY SKY</p>
       </div>
 
       <div className="flex items-center gap-2">
@@ -119,6 +118,8 @@ export default function TitleScreen({
           <span className="text-sm font-bold">How to play</span>
         </button>
       </div>
+
+      <p className="absolute bottom-3 right-4 text-[10px] font-bold tracking-[0.1em] text-[#8A6E96]/80">CREATED BY SKY</p>
 
       <style>{'@keyframes kp-bounce{0%,100%{transform:translateY(0)}50%{transform:translateY(-12px)}}'}</style>
     </div>
