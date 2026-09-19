@@ -16,7 +16,7 @@ const OVER_GRACE = 1600; // ms
 const FIXED_STEP = 1000 / 60; // 物理は固定ステップ（端末のfpsで挙動を変えない）
 const BEST_KEY = 'kanapop.best';
 const SESSION_KEY = 'kanapop.session';
-const SESSION_VERSION = 5;
+const SESSION_VERSION = 6;
 
 type SavedBall = {
   x: number;
@@ -26,6 +26,7 @@ type SavedBall = {
   angle: number;
   angularVelocity: number;
   level: number;
+  finalTier: 0 | 1;
 };
 
 type SavedSession = {
@@ -90,6 +91,7 @@ function saveBest(v: number) {
 
 type Plugin = {
   level: number;
+  finalTier: 0 | 1;
   born: number;
   pop: number;
   merging: boolean;
@@ -344,11 +346,17 @@ export class KanaGame {
     const balls: Matter.Body[] = [];
     for (const ball of saved.balls) {
       if (!Number.isInteger(ball.level) || ball.level < 0 || ball.level > this.maxLevel
+        || (ball.finalTier !== 0 && ball.finalTier !== 1)
         || !Number.isFinite(ball.x) || !Number.isFinite(ball.y) || !Number.isFinite(ball.vx) || !Number.isFinite(ball.vy)) {
         clearSavedSession();
         return false;
       }
-      const body = this.makeBall(Math.max(0, Math.min(FIELD_W, ball.x)), Math.max(0, Math.min(FIELD_H, ball.y)), ball.level);
+      const body = this.makeBall(
+        Math.max(0, Math.min(FIELD_W, ball.x)),
+        Math.max(0, Math.min(FIELD_H, ball.y)),
+        ball.level,
+        ball.finalTier,
+      );
       Matter.Body.setVelocity(body, { x: ball.vx, y: ball.vy });
       Matter.Body.setAngle(body, Number.isFinite(ball.angle) ? ball.angle : 0);
       Matter.Body.setAngularVelocity(body, Number.isFinite(ball.angularVelocity) ? ball.angularVelocity : 0);
@@ -421,7 +429,7 @@ export class KanaGame {
     this.cb.onNext(this.nextLevel);
   }
 
-  private makeBall(x: number, y: number, level: number) {
+  private makeBall(x: number, y: number, level: number, finalTier: 0 | 1 = 0) {
     const c = this.chars[level];
     const body = Matter.Bodies.circle(x, y, c.radius, {
       restitution: 0.16,
@@ -430,7 +438,7 @@ export class KanaGame {
       density: 0.0011,
       slop: 0.02,
     });
-    const p: Plugin = { level, born: performance.now(), pop: 0, merging: false };
+    const p: Plugin = { level, finalTier, born: performance.now(), pop: 0, merging: false };
     body.plugin = p;
     return body;
   }
@@ -445,9 +453,11 @@ export class KanaGame {
       if (!pa || !pb || pa.merging || pb.merging || pa.level !== pb.level) continue;
       if (pa.level >= this.maxLevel) {
         if (pa.level === this.maxLevel && this.finalMergeMode === 'pair' && !this.stageClearInProgress) {
+          if (pa.finalTier !== pb.finalTier) continue;
           pa.merging = true;
           pb.merging = true;
-          this.clearFinalPair(a, b);
+          if (pa.finalTier === 0) this.chargeFinalPair(a, b);
+          else this.clearFinalPair(a, b);
         }
         continue;
       }
@@ -507,6 +517,23 @@ export class KanaGame {
   }
 
   /** チャレンジ中の最終文字2個を合体させる、行解放専用のフィニッシュ。 */
+  private chargeFinalPair(a: Matter.Body, b: Matter.Body) {
+    const x = (a.position.x + b.position.x) / 2;
+    const y = (a.position.y + b.position.y) / 2;
+    Matter.Composite.remove(this.engine.world, a);
+    Matter.Composite.remove(this.engine.world, b);
+    const charged = this.makeBall(x, y, this.maxLevel, 1);
+    plug(charged).pop = 1;
+    Matter.Composite.add(this.engine.world, charged);
+    this.score += (this.maxLevel + 1) * 15;
+    this.cb.onScore(this.score);
+    burst(this.particles, x, y, 2.6);
+    playMerge(this.maxLevel, true);
+    const last = this.chars[this.maxLevel];
+    speakKana(last.kana, { excited: true, romaji: last.romaji });
+  }
+
+  /** 王冠つきの最終文字2個を合体させる、行解放専用のフィニッシュ。 */
   private clearFinalPair(a: Matter.Body, b: Matter.Body) {
     this.stageClearInProgress = true;
     const x = (a.position.x + b.position.x) / 2;
@@ -610,6 +637,7 @@ export class KanaGame {
         angle: body.angle,
         angularVelocity: body.angularVelocity,
         level: plug(body).level,
+        finalTier: plug(body).finalTier,
       }));
     if (balls.length === 0) {
       clearSavedSession();
@@ -677,6 +705,7 @@ export class KanaGame {
         scale: 1 + 0.2 * pop + 0.32 * Math.sin(clearProgress * Math.PI),
         squash: -0.05 * pop - 0.08 * Math.sin(clearProgress * Math.PI),
         alpha: 1 - clearProgress * 0.65,
+        charged: p.finalTier === 1,
       });
     }
 

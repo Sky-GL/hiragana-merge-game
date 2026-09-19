@@ -130,7 +130,7 @@ export default function App() {
       setClearToast({
         stage: getStage(current),
         title: 'CHALLENGE START!',
-        subtitle: '+300 BONUS',
+        subtitle: '+300 BONUS • 4 お TO CLEAR',
       });
       clearTimer.current = window.setTimeout(() => setClearToast(null), 3000);
       gameRef.current?.setChallengeMode(true, progressRef.current.level);

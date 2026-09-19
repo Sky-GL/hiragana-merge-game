@@ -9,7 +9,7 @@ export function drawJellyBall(
   x: number,
   y: number,
   c: KanaChar,
-  opts: { scale?: number; alpha?: number; squash?: number } = {},
+  opts: { scale?: number; alpha?: number; squash?: number; charged?: boolean } = {},
 ) {
   const scale = opts.scale ?? 1;
   const alpha = opts.alpha ?? 1;
@@ -122,6 +122,26 @@ export function drawJellyBall(
   ctx.lineWidth = r * 0.06;
   ctx.strokeText(c.romaji, 0, r * 0.56);
   ctx.fillText(c.romaji, 0, r * 0.56);
+
+  if (opts.charged) {
+    ctx.save();
+    ctx.strokeStyle = '#FFCB4D';
+    ctx.fillStyle = '#FFF4A5';
+    ctx.lineWidth = Math.max(2, r * 0.06);
+    ctx.beginPath();
+    ctx.arc(0, 0, r * 0.9, 0, Math.PI * 2);
+    ctx.stroke();
+    for (const sx of [-0.42, 0, 0.42]) {
+      ctx.beginPath();
+      ctx.moveTo(sx * r, -r * 1.22);
+      ctx.lineTo((sx - 0.09) * r, -r * 1.03);
+      ctx.lineTo((sx + 0.09) * r, -r * 1.03);
+      ctx.closePath();
+      ctx.fill();
+      ctx.stroke();
+    }
+    ctx.restore();
+  }
 
   ctx.restore();
 }
