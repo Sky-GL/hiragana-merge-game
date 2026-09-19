@@ -14,6 +14,7 @@ import {
   loadProgress,
   newlyUnlockedKind,
   recordStageCompletion,
+  STAGE_CHALLENGE_ROUNDS,
   unlockNextStage,
   type Progress,
 } from './game/progress';
@@ -23,8 +24,6 @@ import { unlockSfx } from './game/sfx';
 import { preloadClips } from './game/voiceClips';
 
 const SEEN_KEY = 'kanapop.seenHelp';
-const CHALLENGE_ROUNDS = 2;
-
 type ClearToast = { stage: Stage; title: string; subtitle?: string };
 
 function hasSeenHelp() {
@@ -53,7 +52,7 @@ export default function App() {
   const [unlocked, setUnlocked] = useState(0);
   const [showHint, setShowHint] = useState(true);
   const [finished, setFinished] = useState(false);
-  const [progress, setProgress] = useState<Progress>({ stageLayoutVersion: 3, level: 1, exp: 0, unlockedStages: 1, stageCompletions: {} });
+  const [progress, setProgress] = useState<Progress>({ stageLayoutVersion: 4, level: 1, exp: 0, unlockedStages: 1, stageCompletions: {} });
   const [stageId, setStageId] = useState(1);
   const [toast, setToast] = useState<{ level: number; kind: number | null } | null>(null);
   const [clearToast, setClearToast] = useState<ClearToast | null>(null);
@@ -82,6 +81,7 @@ export default function App() {
       setPhase('play');
     } else {
       setStageId(p.unlockedStages); // 最後に解放されたステージから始める
+      setPhase('play');
     }
     return () => {
       if (toastTimer.current !== null) window.clearTimeout(toastTimer.current);
@@ -121,11 +121,11 @@ export default function App() {
     progressRef.current = completedProgress;
     setProgress(completedProgress);
     if (clearTimer.current !== null) window.clearTimeout(clearTimer.current);
-    if (completions < CHALLENGE_ROUNDS) {
+    if (completions < STAGE_CHALLENGE_ROUNDS) {
       setClearToast({
         stage: getStage(current),
         title: getStage(current).label + ' CHALLENGE',
-        subtitle: completions + ' / ' + CHALLENGE_ROUNDS + ' COMPLETE',
+        subtitle: completions + ' / ' + STAGE_CHALLENGE_ROUNDS + ' COMPLETE',
       });
       clearTimer.current = window.setTimeout(() => setClearToast(null), 3000);
       gameRef.current?.setChallengeMode(true, progressRef.current.level);
@@ -148,8 +148,8 @@ export default function App() {
         setFinished(false);
         setShowHint(true);
         preloadClips(nextStage.chars.map((char) => char.romaji));
-        gameRef.current?.setChallengeMode(false, progressRef.current.level);
         gameRef.current?.setStage(nextStageId);
+        gameRef.current?.setChallengeMode(nextStageId > 1, progressRef.current.level);
         stageAdvanceTimer.current = null;
         stageClearPending.current = false;
       }, 650);
@@ -175,14 +175,26 @@ export default function App() {
     setHelp(false);
   };
 
-  const retry = () => {
+  const resetGame = () => {
     unlockSpeech();
     unlockSfx();
     setFinished(false);
     setScore(0);
     setUnlocked(0);
+    setClearToast(null);
+    if (clearTimer.current !== null) {
+      window.clearTimeout(clearTimer.current);
+      clearTimer.current = null;
+    }
+    if (stageAdvanceTimer.current !== null) {
+      window.clearTimeout(stageAdvanceTimer.current);
+      stageAdvanceTimer.current = null;
+    }
+    stageClearPending.current = false;
     gameRef.current?.restart();
   };
+
+  const retry = resetGame;
 
   const goHome = () => {
     setFinished(false);
@@ -240,7 +252,7 @@ export default function App() {
           <span className="text-base">⭐</span>
           <span className="font-round text-xl font-black leading-none text-[#6B4E68]">{score}</span>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-1">
           <div className="flex items-center gap-2 rounded-full border border-white/70 bg-white/45 px-4 py-1.5 shadow-sm backdrop-blur-md">
             <span className="text-sm">👑</span>
             <span className="font-round text-sm font-bold leading-none text-[#A98EBE]">{best}</span>
@@ -251,6 +263,14 @@ export default function App() {
             className="rounded-full border border-white/70 bg-white/45 px-3 py-1.5 text-xs font-black text-[#6B4E68] shadow-sm backdrop-blur-md active:scale-95"
           >
             HOME
+          </button>
+          <button
+            onClick={resetGame}
+            aria-label="Reset current game"
+            title="RESET"
+            className="flex h-9 w-9 items-center justify-center rounded-full border border-white/70 bg-white/45 text-lg font-black text-[#6B4E68] shadow-sm backdrop-blur-md active:scale-95"
+          >
+            ↻
           </button>
           <button
             onClick={() => setHelp(true)}
@@ -270,9 +290,10 @@ export default function App() {
               setTiltEnabled(await gameRef.current?.enableTilt() ?? false);
             }}
             aria-label={tiltEnabled ? 'Disable tilt controls' : 'Enable tilt controls'}
-            className="rounded-full border border-white/70 bg-white/45 px-3 py-1.5 text-xs font-bold text-[#6B4E68] shadow-sm backdrop-blur-md active:scale-95"
+            title={tiltEnabled ? 'Tilt: ON' : 'Tilt: OFF'}
+            className="flex h-9 w-9 items-center justify-center rounded-full border border-white/70 bg-white/45 text-[11px] font-black text-[#6B4E68] shadow-sm backdrop-blur-md active:scale-95"
           >
-            {tiltEnabled ? '📱 Tilt: ON' : '📱 Tilt: OFF'}
+            {tiltEnabled ? '📱✓' : '📱×'}
           </button>
         </div>
       </div>
@@ -286,7 +307,7 @@ export default function App() {
               g.setStage(stageIdRef.current, true);
               g.setPlayerLevel(progressRef.current.level);
               const completedRounds = progressRef.current.stageCompletions[stageIdRef.current] ?? 0;
-              g.setChallengeMode(completedRounds > 0 && completedRounds < CHALLENGE_ROUNDS, progressRef.current.level);
+              g.setChallengeMode(stageIdRef.current > 1 || (completedRounds > 0 && completedRounds < STAGE_CHALLENGE_ROUNDS), progressRef.current.level);
               g.restoreSession();
             }}
             callbacks={{
