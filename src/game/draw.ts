@@ -140,6 +140,11 @@ export function drawJellyBall(
       ctx.fill();
       ctx.stroke();
     }
+    // 小さい線画だけでは変化が伝わりにくいため、段階を大きな記号でも明示する。
+    ctx.font = `${Math.max(24, r * 0.72)}px sans-serif`;
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText('👑', 0, -r * 1.08);
     ctx.restore();
   }
 
@@ -159,6 +164,10 @@ export function drawJellyBall(
     ctx.closePath();
     ctx.fill();
     ctx.stroke();
+    ctx.font = `${Math.max(22, r * 0.62)}px sans-serif`;
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText('💎', 0, -r * 1.08);
     ctx.restore();
   }
 

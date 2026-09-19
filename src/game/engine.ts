@@ -17,7 +17,7 @@ const OVER_GRACE = 1600; // ms
 const FIXED_STEP = 1000 / 60; // 物理は固定ステップ（端末のfpsで挙動を変えない）
 const BEST_KEY = 'kanapop.best';
 const SESSION_KEY = 'kanapop.session';
-const SESSION_VERSION = 15;
+const SESSION_VERSION = 16;
 
 type SavedBall = {
   x: number;
@@ -543,7 +543,9 @@ export class KanaGame {
         if (!radiusB) continue;
         const dx = a.position.x - b.position.x;
         const dy = a.position.y - b.position.y;
-        const touchingDistance = radiusA + radiusB;
+        // 最終文字だけは、描画上の接触と物理円の数px差を吸収する。
+        const mergeTolerance = pa.level === this.maxLevel ? 8 : 0;
+        const touchingDistance = radiusA + radiusB + mergeTolerance;
         if (dx * dx + dy * dy <= touchingDistance * touchingDistance && this.tryMergePair(a, b)) return;
       }
     }

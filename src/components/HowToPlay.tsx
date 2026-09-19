@@ -24,7 +24,7 @@ export default function HowToPlay({ visible, onClose }: Props) {
             <br />
             🌈 FINAL + 🌈 FINAL → next row! (16 final letters)
             <br />
-            Every final merge shows a crown, gem or rainbow
+            Every final evolution shows a big crown, gem or rainbow
             <br />
             🌈 FINAL made = RAINBOW BONUS +300
             <br />
