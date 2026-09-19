@@ -68,6 +68,7 @@ export default function App() {
   stageIdRef.current = stageId;
   const toastTimer = useRef<number | null>(null);
   const clearTimer = useRef<number | null>(null);
+  const stageAdvanceTimer = useRef<number | null>(null);
   const stageClearPending = useRef(false);
 
   useEffect(() => {
@@ -85,6 +86,7 @@ export default function App() {
     return () => {
       if (toastTimer.current !== null) window.clearTimeout(toastTimer.current);
       if (clearTimer.current !== null) window.clearTimeout(clearTimer.current);
+      if (stageAdvanceTimer.current !== null) window.clearTimeout(stageAdvanceTimer.current);
     };
   }, []);
 
@@ -135,13 +137,27 @@ export default function App() {
       const unlockedProgress = unlockNextStage(completedProgress, STAGE_COUNT);
       progressRef.current = unlockedProgress;
       setProgress(unlockedProgress);
-      const nextStage = getStage(unlockedProgress.unlockedStages);
+      const nextStageId = unlockedProgress.unlockedStages;
+      const nextStage = getStage(nextStageId);
       setClearToast({ stage: nextStage, title: nextStage.label + ' UNLOCKED' });
+      gameRef.current?.prepareStageAdvance();
+      stageAdvanceTimer.current = window.setTimeout(() => {
+        stageIdRef.current = nextStageId;
+        setStageId(nextStageId);
+        setUnlocked(0);
+        setFinished(false);
+        setShowHint(true);
+        preloadClips(nextStage.chars.map((char) => char.romaji));
+        gameRef.current?.setChallengeMode(false, progressRef.current.level);
+        gameRef.current?.setStage(nextStageId);
+        stageAdvanceTimer.current = null;
+        stageClearPending.current = false;
+      }, 650);
     } else {
       setClearToast({ stage: getStage(current), title: 'ALL ROWS COMPLETE!' });
+      stageClearPending.current = false;
     }
     clearTimer.current = window.setTimeout(() => setClearToast(null), 3000);
-    stageClearPending.current = false;
   }, []);
 
   const startGame = () => {
@@ -177,6 +193,10 @@ export default function App() {
     if (clearTimer.current !== null) {
       window.clearTimeout(clearTimer.current);
       clearTimer.current = null;
+    }
+    if (stageAdvanceTimer.current !== null) {
+      window.clearTimeout(stageAdvanceTimer.current);
+      stageAdvanceTimer.current = null;
     }
     stageClearPending.current = false;
     gameRef.current?.restart();

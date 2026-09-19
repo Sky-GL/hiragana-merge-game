@@ -130,6 +130,7 @@ export class KanaGame {
   private lastSave = 0;
   private stagePopTimer: number | null = null;
   private stageClearInProgress = false;
+  private sessionSaveSuspended = false;
   private tiltX = 0;
   private tiltEnabled = false;
   private tiltNeutral: number | null = null;
@@ -256,6 +257,7 @@ export class KanaGame {
       this.stagePopTimer = null;
     }
     this.stageClearInProgress = false;
+    this.sessionSaveSuspended = false;
     for (const b of Matter.Composite.allBodies(this.engine.world)) {
       if (!b.isStatic) Matter.Composite.remove(this.engine.world, b);
     }
@@ -273,6 +275,12 @@ export class KanaGame {
     this.nextLevel = this.rollSpawn();
     this.cb.onScore(0);
     this.cb.onNext(this.nextLevel);
+  }
+
+  /** 次ステージへ移るまで、完了済み旧盤面を保存・復元させない。 */
+  prepareStageAdvance() {
+    this.sessionSaveSuspended = true;
+    clearSavedSession();
   }
 
   /** 端末の傾きを横方向の重力として使う。iPhone はこの呼び出し時に許可を求める。 */
@@ -549,7 +557,7 @@ export class KanaGame {
   };
 
   private saveSession = () => {
-    if (this.finished) return;
+    if (this.finished || this.sessionSaveSuspended) return;
     const balls = Matter.Composite.allBodies(this.engine.world)
       .filter((body) => !body.isStatic && !plug(body).clearUntil)
       .map((body): SavedBall => ({
