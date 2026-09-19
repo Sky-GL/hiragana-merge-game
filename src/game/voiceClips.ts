@@ -3,39 +3,23 @@ import { getAudioContext } from './sfx';
 
 const BASE = '/voice/';
 
-const VOICE_ROWS = [
-  ['00-KANA POP.wav', ['a', 'i', 'u', 'e', 'o']],
-  ['01-KANA POP.wav', ['ka', 'ki', 'ku', 'ke', 'ko']],
-  ['02-KANA POP.wav', ['sa', 'shi', 'su', 'se', 'so']],
-  ['03-KANA POP.wav', ['ta', 'chi', 'tsu', 'te', 'to']],
-  ['04-KANA POP.wav', ['na', 'ni', 'nu', 'ne', 'no']],
-  ['05-KANA POP.wav', ['ha', 'hi', 'fu', 'he', 'ho']],
-  ['06-KANA POP.wav', ['ma', 'mi', 'mu', 'me', 'mo']],
-  ['07-KANA POP.wav', ['ya', 'yu', 'yo']],
-  ['08-KANA POP.wav', ['ra', 'ri', 'ru', 're', 'ro']],
-  ['09-KANA POP.wav', ['wa', 'wo', 'n']],
-  ['10-KANA POP.wav', ['ga', 'gi', 'gu', 'ge', 'go']],
-  ['11-KANA POP.wav', ['za', 'ji', 'zu', 'ze', 'zo']],
-  ['12-KANA POP.wav', ['da', 'dji', 'dzu', 'de', 'do']],
-  ['13-KANA POP.wav', ['ba', 'bi', 'bu', 'be', 'bo']],
-  ['14-KANA POP.wav', ['pa', 'pi', 'pu', 'pe', 'po']],
-  ['15-KANA POP.wav', ['kya', 'kyu', 'kyo']],
-  ['16-KANA POP.wav', ['sha', 'shu', 'sho']],
-  ['17-KANA POP.wav', ['cha', 'chu', 'cho']],
-  ['18-KANA POP.wav', ['nya', 'nyu', 'nyo']],
-  ['19-KANA POP.wav', ['hya', 'hyu', 'hyo']],
-  ['20-KANA POP.wav', ['mya', 'myu', 'myo']],
-  ['21-KANA POP.wav', ['rya', 'ryu', 'ryo']],
-  ['22-KANA POP.wav', ['gya', 'gyu', 'gyo']],
-  ['23-KANA POP.wav', ['ja', 'ju', 'jo']],
-  ['24-KANA POP.wav', ['dya', 'dyu', 'dyo']],
-  ['25-KANA POP.wav', ['bya', 'byu', 'byo']],
-  ['26-KANA POP.wav', ['pya', 'pyu', 'pyo']],
+const RECORDED_ROMAJIS = [
+  'a', 'i', 'u', 'e', 'o',
+  'ka', 'ki', 'ku', 'ke', 'ko',
+  'sa', 'shi', 'su', 'se', 'so',
+  'ta', 'chi', 'tsu', 'te', 'to',
+  'na', 'ni', 'nu', 'ne', 'no',
+  'ha', 'hi', 'fu', 'he', 'ho',
+  'ma', 'mi', 'mu', 'me', 'mo',
+  'ya', 'yu', 'yo',
+  'ra', 'ri', 'ru', 're', 'ro',
+  'wa', 'wo', 'n',
+  'ga', 'ji', 'da', 'de', 'do', 'ba', 'po',
+  'sha', 'sho', 'cho',
 ] as const;
 
 const voiceFileByRomaji: Record<string, string> = Object.fromEntries(
-  VOICE_ROWS.flatMap(([, romajis]) => romajis
-    .map((romaji) => [romaji, `clips/${romaji}.wav`])),
+  RECORDED_ROMAJIS.map((romaji) => [romaji, `clips/${romaji}.wav`]),
 );
 
 const buffers = new Map<string, AudioBuffer>();

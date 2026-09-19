@@ -52,7 +52,7 @@ export default function App() {
   const [showHint, setShowHint] = useState(true);
   const [finished, setFinished] = useState(false);
   const [paused, setPaused] = useState(false);
-  const [progress, setProgress] = useState<Progress>({ stageLayoutVersion: 7, level: 1, exp: 0, unlockedStages: 1, stageCompletions: {} });
+  const [progress, setProgress] = useState<Progress>({ stageLayoutVersion: 8, level: 1, exp: 0, unlockedStages: 1, stageCompletions: {} });
   const [stageId, setStageId] = useState(1);
   const [toast, setToast] = useState<{ level: number; kind: number | null } | null>(null);
   const [clearToast, setClearToast] = useState<ClearToast | null>(null);
@@ -179,7 +179,7 @@ export default function App() {
     clearProgress();
     clearSavedSession();
     clearBest();
-    const fresh: Progress = { stageLayoutVersion: 7, level: 1, exp: 0, unlockedStages: 1, stageCompletions: {} };
+    const fresh: Progress = { stageLayoutVersion: 8, level: 1, exp: 0, unlockedStages: 1, stageCompletions: {} };
     progressRef.current = fresh;
     setProgress(fresh);
     stageIdRef.current = 1;
