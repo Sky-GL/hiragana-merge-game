@@ -109,7 +109,7 @@ export default function App() {
     }
   }, []);
 
-  /** 1周目はチャレンジを開始し、チャレンジ中のお2個合体で次行を解放する。 */
+  /** 1周目はチャレンジを開始し、宝石つき最終文字2個で次行を解放する。 */
   const handleStageClear = useCallback((clearedByFinalPair: boolean) => {
     if (stageClearPending.current) return;
     const p = progressRef.current;
@@ -130,7 +130,7 @@ export default function App() {
       setClearToast({
         stage: getStage(current),
         title: 'CHALLENGE START!',
-        subtitle: '+300 BONUS • 4 お TO CLEAR',
+        subtitle: '+300 BONUS • 8 お TO CLEAR',
       });
       clearTimer.current = window.setTimeout(() => setClearToast(null), 3000);
       gameRef.current?.setChallengeMode(true, progressRef.current.level);

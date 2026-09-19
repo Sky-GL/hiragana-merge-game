@@ -16,7 +16,7 @@ const OVER_GRACE = 1600; // ms
 const FIXED_STEP = 1000 / 60; // 物理は固定ステップ（端末のfpsで挙動を変えない）
 const BEST_KEY = 'kanapop.best';
 const SESSION_KEY = 'kanapop.session';
-const SESSION_VERSION = 6;
+const SESSION_VERSION = 7;
 
 type SavedBall = {
   x: number;
@@ -26,7 +26,7 @@ type SavedBall = {
   angle: number;
   angularVelocity: number;
   level: number;
-  finalTier: 0 | 1;
+  finalTier: 0 | 1 | 2;
 };
 
 type SavedSession = {
@@ -91,7 +91,7 @@ function saveBest(v: number) {
 
 type Plugin = {
   level: number;
-  finalTier: 0 | 1;
+  finalTier: 0 | 1 | 2;
   born: number;
   pop: number;
   merging: boolean;
@@ -346,7 +346,7 @@ export class KanaGame {
     const balls: Matter.Body[] = [];
     for (const ball of saved.balls) {
       if (!Number.isInteger(ball.level) || ball.level < 0 || ball.level > this.maxLevel
-        || (ball.finalTier !== 0 && ball.finalTier !== 1)
+        || (ball.finalTier !== 0 && ball.finalTier !== 1 && ball.finalTier !== 2)
         || !Number.isFinite(ball.x) || !Number.isFinite(ball.y) || !Number.isFinite(ball.vx) || !Number.isFinite(ball.vy)) {
         clearSavedSession();
         return false;
@@ -429,7 +429,7 @@ export class KanaGame {
     this.cb.onNext(this.nextLevel);
   }
 
-  private makeBall(x: number, y: number, level: number, finalTier: 0 | 1 = 0) {
+  private makeBall(x: number, y: number, level: number, finalTier: 0 | 1 | 2 = 0) {
     const c = this.chars[level];
     const body = Matter.Bodies.circle(x, y, c.radius, {
       restitution: 0.16,
@@ -456,7 +456,7 @@ export class KanaGame {
           if (pa.finalTier !== pb.finalTier) continue;
           pa.merging = true;
           pb.merging = true;
-          if (pa.finalTier === 0) this.chargeFinalPair(a, b);
+          if (pa.finalTier < 2) this.evolveFinalPair(a, b, pa.finalTier === 0 ? 1 : 2);
           else this.clearFinalPair(a, b);
         }
         continue;
@@ -516,24 +516,24 @@ export class KanaGame {
     }
   }
 
-  /** チャレンジ中の最終文字2個を合体させる、行解放専用のフィニッシュ。 */
-  private chargeFinalPair(a: Matter.Body, b: Matter.Body) {
+  /** 最終文字を段階進化させる。王冠、宝石の順に育つ。 */
+  private evolveFinalPair(a: Matter.Body, b: Matter.Body, nextTier: 1 | 2) {
     const x = (a.position.x + b.position.x) / 2;
     const y = (a.position.y + b.position.y) / 2;
     Matter.Composite.remove(this.engine.world, a);
     Matter.Composite.remove(this.engine.world, b);
-    const charged = this.makeBall(x, y, this.maxLevel, 1);
+    const charged = this.makeBall(x, y, this.maxLevel, nextTier);
     plug(charged).pop = 1;
     Matter.Composite.add(this.engine.world, charged);
-    this.score += (this.maxLevel + 1) * 15;
+    this.score += (this.maxLevel + 1) * (nextTier === 1 ? 15 : 25);
     this.cb.onScore(this.score);
-    burst(this.particles, x, y, 2.6);
+    burst(this.particles, x, y, nextTier === 1 ? 2.6 : 3.2);
     playMerge(this.maxLevel, true);
     const last = this.chars[this.maxLevel];
     speakKana(last.kana, { excited: true, romaji: last.romaji });
   }
 
-  /** 王冠つきの最終文字2個を合体させる、行解放専用のフィニッシュ。 */
+  /** 宝石つきの最終文字2個を合体させる、行解放専用のフィニッシュ。 */
   private clearFinalPair(a: Matter.Body, b: Matter.Body) {
     this.stageClearInProgress = true;
     const x = (a.position.x + b.position.x) / 2;
@@ -705,7 +705,7 @@ export class KanaGame {
         scale: 1 + 0.2 * pop + 0.32 * Math.sin(clearProgress * Math.PI),
         squash: -0.05 * pop - 0.08 * Math.sin(clearProgress * Math.PI),
         alpha: 1 - clearProgress * 0.65,
-        charged: p.finalTier === 1,
+        finalTier: p.finalTier,
       });
     }
 

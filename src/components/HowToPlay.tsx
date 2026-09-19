@@ -50,6 +50,15 @@ export default function HowToPlay({ visible, onClose }: Props) {
           </p>
         </div>
 
+        <div className="mt-3 rounded-2xl border border-[#FFE6A4] bg-[#FFF9E5] px-3 py-3 text-center">
+          <p className="text-[11px] font-black tracking-[0.08em] text-[#B78035]">CHALLENGE UNLOCK</p>
+          <p className="mt-1 text-[11px] font-bold leading-relaxed text-[#8A6E55]">
+            お + お → 👑お &nbsp;•&nbsp; 👑お + 👑お → 💎お
+            <br />
+            💎お + 💎お → next row! (8 お total)
+          </p>
+        </div>
+
         <button
           onClick={onClose}
           className="mx-auto mt-5 flex h-14 w-full items-center justify-center gap-2 rounded-full border-2 border-white bg-gradient-to-b from-[#FFC6DF] to-[#F58FB0] text-white shadow-[0_10px_22px_rgba(245,143,176,0.45)] active:scale-95"
