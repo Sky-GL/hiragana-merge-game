@@ -2,8 +2,7 @@
 // レベルが上がるほど「出てくる文字の種類」が増える = 自然に難しくなる。
 // 減点・降格は一切なし（全肯定設計）。
 const KEY = 'kanapop.progress';
-const STAGE_LAYOUT_VERSION = 4;
-export const STAGE_CHALLENGE_ROUNDS = 3;
+const STAGE_LAYOUT_VERSION = 5;
 
 export type Progress = {
   stageLayoutVersion: number;
@@ -76,9 +75,9 @@ export function unlockNextStage(p: Progress, total: number): Progress {
   return next;
 }
 
-/** 1行を最後まで作った回数を記録する。規定回数で次の行を解放する。 */
+/** 1周目を終えた行を記録し、次回の開始時にチャレンジ状態を復元する。 */
 export function recordStageCompletion(p: Progress, stageId: number): { next: Progress; completions: number } {
-  const completions = Math.min(STAGE_CHALLENGE_ROUNDS, (p.stageCompletions[stageId] ?? 0) + 1);
+  const completions = 1;
   const next = {
     ...p,
     stageCompletions: { ...p.stageCompletions, [stageId]: completions },

@@ -14,7 +14,6 @@ import {
   loadProgress,
   newlyUnlockedKind,
   recordStageCompletion,
-  STAGE_CHALLENGE_ROUNDS,
   unlockNextStage,
   type Progress,
 } from './game/progress';
@@ -52,7 +51,7 @@ export default function App() {
   const [unlocked, setUnlocked] = useState(0);
   const [showHint, setShowHint] = useState(true);
   const [finished, setFinished] = useState(false);
-  const [progress, setProgress] = useState<Progress>({ stageLayoutVersion: 4, level: 1, exp: 0, unlockedStages: 1, stageCompletions: {} });
+  const [progress, setProgress] = useState<Progress>({ stageLayoutVersion: 5, level: 1, exp: 0, unlockedStages: 1, stageCompletions: {} });
   const [stageId, setStageId] = useState(1);
   const [toast, setToast] = useState<{ level: number; kind: number | null } | null>(null);
   const [clearToast, setClearToast] = useState<ClearToast | null>(null);
@@ -109,32 +108,43 @@ export default function App() {
     }
   }, []);
 
-  /** 最終文字を2回作るチャレンジを通過したら次のステージを解放する */
-  const handleStageClear = useCallback(() => {
+  /** 1周目はチャレンジを開始し、チャレンジ中のお2個合体で次行を解放する。 */
+  const handleStageClear = useCallback((clearedByFinalPair: boolean) => {
     if (stageClearPending.current) return;
     const p = progressRef.current;
     const current = stageIdRef.current;
     if (current < p.unlockedStages) return; // 解放済み行の遊び直しでは進行しない
 
     stageClearPending.current = true;
-    const { next: completedProgress, completions } = recordStageCompletion(p, current);
-    progressRef.current = completedProgress;
-    setProgress(completedProgress);
     if (clearTimer.current !== null) window.clearTimeout(clearTimer.current);
-    if (completions < STAGE_CHALLENGE_ROUNDS) {
+    if (!clearedByFinalPair) {
+      if ((p.stageCompletions[current] ?? 0) > 0) {
+        stageClearPending.current = false;
+        return;
+      }
+      const { next: challengeProgress } = recordStageCompletion(p, current);
+      progressRef.current = challengeProgress;
+      setProgress(challengeProgress);
+      gameRef.current?.addBonusScore(300);
       setClearToast({
         stage: getStage(current),
-        title: getStage(current).label + ' CHALLENGE',
-        subtitle: completions + ' / ' + STAGE_CHALLENGE_ROUNDS + ' COMPLETE',
+        title: 'CHALLENGE START!',
+        subtitle: '+300 BONUS',
       });
       clearTimer.current = window.setTimeout(() => setClearToast(null), 3000);
       gameRef.current?.setChallengeMode(true, progressRef.current.level);
+      gameRef.current?.setFinalMergeMode('pair');
+      stageClearPending.current = false;
+      return;
+    }
+
+    if ((p.stageCompletions[current] ?? 0) === 0) {
       stageClearPending.current = false;
       return;
     }
 
     if (current < STAGE_COUNT) {
-      const unlockedProgress = unlockNextStage(completedProgress, STAGE_COUNT);
+      const unlockedProgress = unlockNextStage(p, STAGE_COUNT);
       progressRef.current = unlockedProgress;
       setProgress(unlockedProgress);
       const nextStageId = unlockedProgress.unlockedStages;
@@ -149,7 +159,7 @@ export default function App() {
         setShowHint(true);
         preloadClips(nextStage.chars.map((char) => char.romaji));
         gameRef.current?.setStage(nextStageId);
-        gameRef.current?.setChallengeMode(nextStageId > 1, progressRef.current.level);
+        gameRef.current?.setChallengeMode(false, progressRef.current.level);
         stageAdvanceTimer.current = null;
         stageClearPending.current = false;
       }, 650);
@@ -307,7 +317,8 @@ export default function App() {
               g.setStage(stageIdRef.current, true);
               g.setPlayerLevel(progressRef.current.level);
               const completedRounds = progressRef.current.stageCompletions[stageIdRef.current] ?? 0;
-              g.setChallengeMode(stageIdRef.current > 1 || (completedRounds > 0 && completedRounds < STAGE_CHALLENGE_ROUNDS), progressRef.current.level);
+              g.setChallengeMode(completedRounds > 0, progressRef.current.level);
+              g.setFinalMergeMode(completedRounds > 0 ? 'pair' : 'pop');
               g.restoreSession();
             }}
             callbacks={{

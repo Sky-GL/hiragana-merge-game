@@ -1,6 +1,5 @@
 import Matter from 'matter-js';
 import { getStage, type KanaChar } from './stages';
-import { spawnPoolFor } from './progress';
 import { burst, drawParticles, updateParticles, type Particle } from './particles';
 import { drawJellyBall } from './draw';
 import { speakKana, unlockSpeech } from './speech';
@@ -17,7 +16,7 @@ const OVER_GRACE = 1600; // ms
 const FIXED_STEP = 1000 / 60; // 物理は固定ステップ（端末のfpsで挙動を変えない）
 const BEST_KEY = 'kanapop.best';
 const SESSION_KEY = 'kanapop.session';
-const SESSION_VERSION = 4;
+const SESSION_VERSION = 5;
 
 type SavedBall = {
   x: number;
@@ -99,7 +98,7 @@ export type GameCallbacks = {
   onFirstInteract: () => void;
   onUnlockLevel: (level: number) => void;
   onExp: (gain: number) => void;
-  onStageClear: () => void;
+  onStageClear: (clearedByFinalPair: boolean) => void;
 };
 
 export class KanaGame {
@@ -110,8 +109,9 @@ export class KanaGame {
   private particles: Particle[] = [];
   private score = 0;
   private chars: KanaChar[] = getStage(1).chars;
-  private spawnPool = spawnPoolFor(1);
+  private spawnPool = [0];
   private challengeMode = false;
+  private finalMergeMode: 'pop' | 'pair' = 'pop';
   private spawnBag: number[] = [];
   private recentSpawns: number[] = [];
   private openingSpawns: number[] = [];
@@ -159,10 +159,21 @@ export class KanaGame {
     this.cb.onNext(this.nextLevel);
   }
 
+  /** 通常は最終文字を消す。チャレンジでは最終文字2個の合体をクリア条件にする。 */
+  setFinalMergeMode(mode: 'pop' | 'pair') {
+    this.finalMergeMode = mode;
+  }
+
+  addBonusScore(points: number) {
+    this.score += points;
+    this.cb.onScore(this.score);
+  }
+
   /** 遊ぶ行セット（ステージ）を切り替える。盤面はリセットされる */
   setStage(stageId: number, preserveSession = false) {
     this.stageId = stageId;
     this.chars = getStage(stageId).chars;
+    this.finalMergeMode = 'pop';
     this.restart(!preserveSession);
   }
 
@@ -171,8 +182,13 @@ export class KanaGame {
   }
 
   private poolFor(playerLevel: number) {
-    if (!this.challengeMode) return spawnPoolFor(playerLevel);
-    return Array.from({ length: Math.max(1, this.maxLevel) }, (_, level) => level);
+    void playerLevel;
+    if (this.challengeMode) return Array.from({ length: Math.max(1, this.maxLevel) }, (_, level) => level);
+    const weights = [40, 35, 18, 7];
+    const highestSpawnLevel = Math.min(this.maxLevel - 1, weights.length - 1);
+    return Array.from({ length: Math.max(1, highestSpawnLevel + 1) }, (_, level) =>
+      Array.from({ length: weights[level] }, () => level),
+    ).flat();
   }
 
   private rollSpawn() {
@@ -423,8 +439,15 @@ export class KanaGame {
       if (a.isStatic || b.isStatic) continue;
       const pa = plug(a);
       const pb = plug(b);
-      if (!pa || !pb || pa.merging || pb.merging) continue;
-      if (pa.level !== pb.level || pa.level >= this.maxLevel) continue;
+      if (!pa || !pb || pa.merging || pb.merging || pa.level !== pb.level) continue;
+      if (pa.level >= this.maxLevel) {
+        if (pa.level === this.maxLevel && this.finalMergeMode === 'pair' && !this.stageClearInProgress) {
+          pa.merging = true;
+          pb.merging = true;
+          this.clearFinalPair(a, b);
+        }
+        continue;
+      }
       pa.merging = true;
       pb.merging = true;
       this.merge(a, b, pa.level + 1);
@@ -452,6 +475,8 @@ export class KanaGame {
     this.unlocked = Math.max(this.unlocked, nextLevel);
     this.cb.onUnlockLevel(nextLevel);
     this.cb.onExp(nextLevel + 1); // 大きい文字ほど経験値が多い
+    if (isMax && this.finalMergeMode === 'pair') return;
+
     if (isMax && this.stageClearInProgress) {
       // 同フレームに複数完成しても、チャレンジ回数は1回分だけにする。
       Matter.Composite.remove(this.engine.world, body);
@@ -466,7 +491,7 @@ export class KanaGame {
       p.clearY = y;
       body.isSensor = true;
       Matter.Body.setVelocity(body, { x: 0, y: 0 });
-      this.cb.onStageClear();
+      this.cb.onStageClear(false);
       // 最終文字は完成のごほうびとして弾けて消え、次の周回の盤面を圧迫しない。
       if (this.stagePopTimer !== null) window.clearTimeout(this.stagePopTimer);
       this.stagePopTimer = window.setTimeout(() => {
@@ -476,6 +501,20 @@ export class KanaGame {
         this.saveSession();
       }, 420);
     }
+  }
+
+  /** チャレンジ中の最終文字2個を合体させる、行解放専用のフィニッシュ。 */
+  private clearFinalPair(a: Matter.Body, b: Matter.Body) {
+    this.stageClearInProgress = true;
+    const x = (a.position.x + b.position.x) / 2;
+    const y = (a.position.y + b.position.y) / 2;
+    Matter.Composite.remove(this.engine.world, a);
+    Matter.Composite.remove(this.engine.world, b);
+    burst(this.particles, x, y, 3.1);
+    playFinish();
+    const last = this.chars[this.maxLevel];
+    speakKana(last.kana, { excited: true, romaji: last.romaji });
+    this.cb.onStageClear(true);
   }
 
   private step(dt: number) {
