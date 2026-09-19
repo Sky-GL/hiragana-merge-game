@@ -27,6 +27,8 @@ export default function HowToPlay({ visible, onClose }: Props) {
             🌈 FINAL made = RAINBOW BONUS +300
             <br />
             Level up: 100 EXP at Lv 1, +90 EXP each level
+            <br />
+            Auto-drop: 4 sec normal / 2 sec challenge
           </p>
         </div>
 

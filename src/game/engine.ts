@@ -129,6 +129,8 @@ export class KanaGame {
   private aimX = FIELD_W / 2;
   private pointerDown = false;
   private lastDrop = 0;
+  private autoDropTimer: number | null = null;
+  private autoDropDeadline = 0;
   private overTime = 0;
   private finished = false;
   private interacted = false;
@@ -158,6 +160,7 @@ export class KanaGame {
     this.resetSpawnSequence();
     this.nextLevel = this.rollSpawn();
     this.cb.onNext(this.nextLevel);
+    this.scheduleAutoDrop();
   }
 
   /** チャレンジでは、最終文字の一つ前までを同じ頻度で出して判断を増やす。 */
@@ -167,11 +170,13 @@ export class KanaGame {
     this.resetSpawnSequence();
     this.nextLevel = this.rollSpawn();
     this.cb.onNext(this.nextLevel);
+    this.scheduleAutoDrop();
   }
 
   /** 通常は最終文字を消す。チャレンジでは最終文字2個の合体をクリア条件にする。 */
   setFinalMergeMode(mode: 'pop' | 'pair') {
     this.finalMergeMode = mode;
+    this.scheduleAutoDrop();
   }
 
   addBonusScore(points: number) {
@@ -255,6 +260,7 @@ export class KanaGame {
     this.cb.onNext(this.nextLevel);
     this.lastFrame = performance.now();
     this.loop(this.lastFrame);
+    this.scheduleAutoDrop();
   }
 
   destroy() {
@@ -266,6 +272,7 @@ export class KanaGame {
     window.removeEventListener('resize', this.resize);
     window.removeEventListener('pagehide', this.saveSession);
     if (this.stagePopTimer !== null) window.clearTimeout(this.stagePopTimer);
+    this.clearAutoDropTimer();
     this.disableTilt();
     Matter.Events.off(this.engine, 'collisionStart', this.onCollide);
     Matter.Events.off(this.engine, 'collisionActive', this.onCollide);
@@ -280,6 +287,7 @@ export class KanaGame {
     }
     this.stageClearInProgress = false;
     this.sessionSaveSuspended = false;
+    this.clearAutoDropTimer();
     for (const b of Matter.Composite.allBodies(this.engine.world)) {
       if (!b.isStatic) Matter.Composite.remove(this.engine.world, b);
     }
@@ -297,11 +305,13 @@ export class KanaGame {
     this.nextLevel = this.rollSpawn();
     this.cb.onScore(0);
     this.cb.onNext(this.nextLevel);
+    this.scheduleAutoDrop();
   }
 
   /** 次ステージへ移るまで、完了済み旧盤面を保存・復元させない。 */
   prepareStageAdvance() {
     this.sessionSaveSuspended = true;
+    this.clearAutoDropTimer();
     clearSavedSession();
   }
 
@@ -419,6 +429,7 @@ export class KanaGame {
   };
 
   private drop() {
+    if (this.finished) return;
     const now = performance.now();
     if (now - this.lastDrop < DROP_COOLDOWN) return;
     this.lastDrop = now;
@@ -428,6 +439,28 @@ export class KanaGame {
     speakKana(this.chars[level].kana, { romaji: this.chars[level].romaji });
     this.nextLevel = this.rollSpawn();
     this.cb.onNext(this.nextLevel);
+    this.scheduleAutoDrop();
+  }
+
+  private clearAutoDropTimer() {
+    if (this.autoDropTimer !== null) window.clearTimeout(this.autoDropTimer);
+    this.autoDropTimer = null;
+    this.autoDropDeadline = 0;
+  }
+
+  /** 通常は4秒、チャレンジは2秒で次の文字を自動落下させる。 */
+  private scheduleAutoDrop() {
+    if (!this.canvas || this.finished) return;
+    this.clearAutoDropTimer();
+    const delay = this.finalMergeMode === 'pair' ? 2000 : 4000;
+    this.autoDropDeadline = performance.now() + delay;
+    this.autoDropTimer = window.setTimeout(() => {
+      this.autoDropTimer = null;
+      this.autoDropDeadline = 0;
+      if (this.finished) return;
+      this.pointerDown = false;
+      this.drop();
+    }, delay);
   }
 
   private makeBall(x: number, y: number, level: number, finalTier: 0 | 1 | 2 | 3 = 0) {
@@ -586,6 +619,7 @@ export class KanaGame {
 
   private finish() {
     this.finished = true;
+    this.clearAutoDropTimer();
     clearSavedSession();
     const best = Math.max(this.score, loadBest());
     saveBest(best);
@@ -696,6 +730,15 @@ export class KanaGame {
       ctx.restore();
       const bob = this.pointerDown ? 0 : Math.sin(t / 420) * 3;
       drawJellyBall(ctx, this.aimX, PREVIEW_Y + bob, this.chars[this.nextLevel], { alpha: 0.96 });
+      if (this.autoDropDeadline > 0) {
+        const remaining = Math.max(0, (this.autoDropDeadline - performance.now()) / 1000);
+        ctx.save();
+        ctx.fillStyle = remaining <= 1 ? '#F58FB0' : '#8A6E96';
+        ctx.font = '800 12px "M PLUS Rounded 1c", sans-serif';
+        ctx.textAlign = 'center';
+        ctx.fillText('DROP ' + remaining.toFixed(1), this.aimX, 22);
+        ctx.restore();
+      }
     }
 
     // ボール本体
