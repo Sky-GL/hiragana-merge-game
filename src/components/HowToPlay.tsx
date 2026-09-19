@@ -14,7 +14,7 @@ export default function HowToPlay({ visible, onClose }: Props) {
         <h2 className="text-center font-round text-2xl font-black text-[#F58FB0]">How to play</h2>
 
         <div className="mt-3 rounded-2xl border border-[#FFE6A4] bg-[#FFF9E5] px-3 py-3 text-center">
-          <p className="text-[11px] font-black tracking-[0.08em] text-[#B78035]">CHALLENGE RULE</p>
+          <p className="text-[11px] font-black tracking-[0.08em] text-[#B78035]">ROW UNLOCK RULE</p>
           <p className="mt-1 text-[11px] font-bold leading-relaxed text-[#8A6E55]">
             FINAL + FINAL → 👑 FINAL
             <br />

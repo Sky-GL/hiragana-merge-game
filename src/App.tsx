@@ -14,7 +14,6 @@ import {
   clearProgress,
   loadProgress,
   newlyUnlockedKind,
-  recordStageCompletion,
   unlockNextStage,
   type Progress,
 } from './game/progress';
@@ -111,7 +110,7 @@ export default function App() {
     }
   }, []);
 
-  /** 1周目はチャレンジを開始し、宝石つき最終文字2個で次行を解放する。 */
+  /** 最終文字を16個分まで段階マージすると、次の行を解放する。 */
   const handleStageClear = useCallback((clearedByFinalPair: boolean) => {
     if (stageClearPending.current) return;
     const p = progressRef.current;
@@ -121,27 +120,6 @@ export default function App() {
     stageClearPending.current = true;
     if (clearTimer.current !== null) window.clearTimeout(clearTimer.current);
     if (!clearedByFinalPair) {
-      if ((p.stageCompletions[current] ?? 0) > 0) {
-        stageClearPending.current = false;
-        return;
-      }
-      const { next: challengeProgress } = recordStageCompletion(p, current);
-      progressRef.current = challengeProgress;
-      setProgress(challengeProgress);
-      const finalKana = getStage(current).chars.slice(-1)[0].kana;
-      setClearToast({
-        stage: getStage(current),
-        title: 'CHALLENGE START!',
-        subtitle: 'BUILD 16 ' + finalKana + ' TO CLEAR',
-      });
-      clearTimer.current = window.setTimeout(() => setClearToast(null), 3000);
-      gameRef.current?.setChallengeMode(true, progressRef.current.level);
-      gameRef.current?.setFinalMergeMode('pair');
-      stageClearPending.current = false;
-      return;
-    }
-
-    if ((p.stageCompletions[current] ?? 0) === 0) {
       stageClearPending.current = false;
       return;
     }
@@ -164,7 +142,6 @@ export default function App() {
         setShowHint(false);
         preloadClips(nextStage.chars.map((char) => char.romaji));
         gameRef.current?.setStage(nextStageId);
-        gameRef.current?.setChallengeMode(false, progressRef.current.level);
         stageAdvanceTimer.current = null;
         stageClearPending.current = false;
       }, 650);
@@ -367,9 +344,7 @@ export default function App() {
               gameRef.current = g;
               g.setStage(stageIdRef.current, true);
               g.setPlayerLevel(progressRef.current.level);
-              const completedRounds = progressRef.current.stageCompletions[stageIdRef.current] ?? 0;
-              g.setChallengeMode(completedRounds > 0, progressRef.current.level);
-              g.setFinalMergeMode(completedRounds > 0 ? 'pair' : 'pop');
+              g.setFinalMergeMode('pair');
               g.restoreSession();
             }}
             callbacks={{

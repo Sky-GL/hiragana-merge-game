@@ -16,7 +16,7 @@ const OVER_GRACE = 1600; // ms
 const FIXED_STEP = 1000 / 60; // 物理は固定ステップ（端末のfpsで挙動を変えない）
 const BEST_KEY = 'kanapop.best';
 const SESSION_KEY = 'kanapop.session';
-const SESSION_VERSION = 8;
+const SESSION_VERSION = 9;
 
 type SavedBall = {
   x: number;
@@ -121,7 +121,7 @@ export class KanaGame {
   private score = 0;
   private chars: KanaChar[] = getStage(1).chars;
   private spawnPool = [0];
-  private finalMergeMode: 'pop' | 'pair' = 'pop';
+  private finalMergeMode: 'pop' | 'pair' = 'pair';
   private spawnBag: number[] = [];
   private recentSpawns: number[] = [];
   private openingSpawns: number[] = [];
@@ -165,17 +165,7 @@ export class KanaGame {
     this.scheduleAutoDrop();
   }
 
-  /** チャレンジでは、最終文字の一つ前までを同じ頻度で出して判断を増やす。 */
-  setChallengeMode(enabled: boolean, playerLevel: number) {
-    void enabled;
-    this.spawnPool = this.poolFor(playerLevel);
-    this.resetSpawnSequence();
-    this.nextLevel = this.rollSpawn();
-    this.cb.onNext(this.nextLevel);
-    this.scheduleAutoDrop();
-  }
-
-  /** 通常は最終文字を消す。チャレンジでは最終文字2個の合体をクリア条件にする。 */
+  /** 最終文字は段階マージで行解放へ進む。 */
   setFinalMergeMode(mode: 'pop' | 'pair') {
     this.finalMergeMode = mode;
     this.scheduleAutoDrop();
@@ -190,7 +180,7 @@ export class KanaGame {
   setStage(stageId: number, preserveSession = false) {
     this.stageId = stageId;
     this.chars = getStage(stageId).chars;
-    this.finalMergeMode = 'pop';
+    this.finalMergeMode = 'pair';
     this.restart(!preserveSession);
   }
 
