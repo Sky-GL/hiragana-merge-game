@@ -157,7 +157,8 @@ export default function App() {
         setStageId(nextStageId);
         setUnlocked(0);
         setFinished(false);
-        setShowHint(true);
+        // 指の案内は最初のあ行だけ。以降の行では盤面を隠さない。
+        setShowHint(false);
         preloadClips(nextStage.chars.map((char) => char.romaji));
         gameRef.current?.setStage(nextStageId);
         gameRef.current?.setChallengeMode(false, progressRef.current.level);
