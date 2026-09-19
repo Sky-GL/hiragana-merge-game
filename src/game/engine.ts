@@ -81,7 +81,15 @@ function saveBest(v: number) {
   }
 }
 
-type Plugin = { level: number; born: number; pop: number; merging: boolean };
+type Plugin = {
+  level: number;
+  born: number;
+  pop: number;
+  merging: boolean;
+  clearUntil?: number;
+  clearX?: number;
+  clearY?: number;
+};
 const plug = (b: Matter.Body) => b.plugin as unknown as Plugin;
 
 export type GameCallbacks = {
@@ -120,6 +128,8 @@ export class KanaGame {
   private stageId = 1;
   private unlocked = 0;
   private lastSave = 0;
+  private stagePopTimer: number | null = null;
+  private stageClearInProgress = false;
   private tiltX = 0;
   private tiltEnabled = false;
   private tiltNeutral: number | null = null;
@@ -232,6 +242,7 @@ export class KanaGame {
     this.canvas?.removeEventListener('pointercancel', this.onUp);
     window.removeEventListener('resize', this.resize);
     window.removeEventListener('pagehide', this.saveSession);
+    if (this.stagePopTimer !== null) window.clearTimeout(this.stagePopTimer);
     this.disableTilt();
     Matter.Events.off(this.engine, 'collisionStart', this.onCollide);
     Matter.Events.off(this.engine, 'collisionActive', this.onCollide);
@@ -240,6 +251,11 @@ export class KanaGame {
   }
 
   restart(clearSaved = true) {
+    if (this.stagePopTimer !== null) {
+      window.clearTimeout(this.stagePopTimer);
+      this.stagePopTimer = null;
+    }
+    this.stageClearInProgress = false;
     for (const b of Matter.Composite.allBodies(this.engine.world)) {
       if (!b.isStatic) Matter.Composite.remove(this.engine.world, b);
     }
@@ -421,14 +437,37 @@ export class KanaGame {
 
     playMerge(nextLevel, isMax);
     speakKana(this.chars[nextLevel].kana, { excited: isMax, romaji: this.chars[nextLevel].romaji });
-    burst(this.particles, x, y, isMax ? 1.6 : 1);
+    burst(this.particles, x, y, isMax ? 2.2 : 1);
 
     this.score += (nextLevel + 1) * 10;
     this.cb.onScore(this.score);
     this.unlocked = Math.max(this.unlocked, nextLevel);
     this.cb.onUnlockLevel(nextLevel);
     this.cb.onExp(nextLevel + 1); // 大きい文字ほど経験値が多い
-    if (isMax) this.cb.onStageClear(); // 最終文字に到達 = このステージはクリア
+    if (isMax && this.stageClearInProgress) {
+      // 同フレームに複数完成しても、チャレンジ回数は1回分だけにする。
+      Matter.Composite.remove(this.engine.world, body);
+      return;
+    }
+
+    if (isMax) {
+      this.stageClearInProgress = true;
+      const p = plug(body);
+      p.clearUntil = performance.now() + 420;
+      p.clearX = x;
+      p.clearY = y;
+      body.isSensor = true;
+      Matter.Body.setVelocity(body, { x: 0, y: 0 });
+      this.cb.onStageClear();
+      // 最終文字は完成のごほうびとして弾けて消え、次の周回の盤面を圧迫しない。
+      if (this.stagePopTimer !== null) window.clearTimeout(this.stagePopTimer);
+      this.stagePopTimer = window.setTimeout(() => {
+        Matter.Composite.remove(this.engine.world, body);
+        this.stagePopTimer = null;
+        this.stageClearInProgress = false;
+        this.saveSession();
+      }, 420);
+    }
   }
 
   private step(dt: number) {
@@ -451,6 +490,11 @@ export class KanaGame {
     for (const b of Matter.Composite.allBodies(this.engine.world)) {
       if (b.isStatic) continue;
       const p = plug(b);
+      if (p.clearUntil && now < p.clearUntil) {
+        Matter.Body.setPosition(b, { x: p.clearX!, y: p.clearY! });
+        Matter.Body.setVelocity(b, { x: 0, y: 0 });
+        continue;
+      }
       p.pop = Math.max(0, p.pop - dt * 3.2);
       if (now - p.born > 900 && b.position.y - this.chars[p.level].radius < TOP_LINE) over = true;
     }
@@ -507,7 +551,7 @@ export class KanaGame {
   private saveSession = () => {
     if (this.finished) return;
     const balls = Matter.Composite.allBodies(this.engine.world)
-      .filter((body) => !body.isStatic)
+      .filter((body) => !body.isStatic && !plug(body).clearUntil)
       .map((body): SavedBall => ({
         x: body.position.x,
         y: body.position.y,
@@ -517,7 +561,10 @@ export class KanaGame {
         angularVelocity: body.angularVelocity,
         level: plug(body).level,
       }));
-    if (balls.length === 0) return;
+    if (balls.length === 0) {
+      clearSavedSession();
+      return;
+    }
     try {
       const saved: SavedSession = { version: SESSION_VERSION, stageId: this.stageId, score: this.score, nextLevel: this.nextLevel, unlocked: this.unlocked, balls };
       localStorage.setItem(SESSION_KEY, JSON.stringify(saved));
@@ -573,9 +620,13 @@ export class KanaGame {
       if (b.isStatic) continue;
       const p = plug(b);
       const pop = popCurve(p.pop);
+      const clearProgress = p.clearUntil
+        ? Math.max(0, Math.min(1, 1 - (p.clearUntil - t) / 420))
+        : 0;
       drawJellyBall(ctx, b.position.x, b.position.y, this.chars[p.level], {
-        scale: 1 + 0.2 * pop,
-        squash: -0.05 * pop,
+        scale: 1 + 0.2 * pop + 0.32 * Math.sin(clearProgress * Math.PI),
+        squash: -0.05 * pop - 0.08 * Math.sin(clearProgress * Math.PI),
+        alpha: 1 - clearProgress * 0.65,
       });
     }
 

@@ -8,7 +8,7 @@ import LevelUpToast from './components/LevelUpToast';
 import ResultOverlay from './components/ResultOverlay';
 import StageClearToast from './components/StageClearToast';
 import TitleScreen from './components/TitleScreen';
-import { clearSavedSession, loadBest, loadSavedStage, type KanaGame } from './game/engine';
+import { loadBest, loadSavedStage, type KanaGame } from './game/engine';
 import {
   addExp,
   loadProgress,
@@ -68,7 +68,6 @@ export default function App() {
   stageIdRef.current = stageId;
   const toastTimer = useRef<number | null>(null);
   const clearTimer = useRef<number | null>(null);
-  const challengeRestartTimer = useRef<number | null>(null);
   const stageClearPending = useRef(false);
 
   useEffect(() => {
@@ -86,7 +85,6 @@ export default function App() {
     return () => {
       if (toastTimer.current !== null) window.clearTimeout(toastTimer.current);
       if (clearTimer.current !== null) window.clearTimeout(clearTimer.current);
-      if (challengeRestartTimer.current !== null) window.clearTimeout(challengeRestartTimer.current);
     };
   }, []);
 
@@ -127,16 +125,9 @@ export default function App() {
         title: getStage(current).label + ' CHALLENGE',
         subtitle: completions + ' / ' + CHALLENGE_ROUNDS + ' COMPLETE',
       });
-      clearSavedSession();
       clearTimer.current = window.setTimeout(() => setClearToast(null), 3000);
-      challengeRestartTimer.current = window.setTimeout(() => {
-        gameRef.current?.setChallengeMode(true, progressRef.current.level);
-        gameRef.current?.restart();
-        setUnlocked(0);
-        setFinished(false);
-        stageClearPending.current = false;
-        challengeRestartTimer.current = null;
-      }, 650);
+      gameRef.current?.setChallengeMode(true, progressRef.current.level);
+      stageClearPending.current = false;
       return;
     }
 
@@ -186,10 +177,6 @@ export default function App() {
     if (clearTimer.current !== null) {
       window.clearTimeout(clearTimer.current);
       clearTimer.current = null;
-    }
-    if (challengeRestartTimer.current !== null) {
-      window.clearTimeout(challengeRestartTimer.current);
-      challengeRestartTimer.current = null;
     }
     stageClearPending.current = false;
     gameRef.current?.restart();
