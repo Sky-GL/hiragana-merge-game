@@ -116,7 +116,6 @@ export default function App() {
     if (stageClearPending.current) return false;
     const p = progressRef.current;
     const current = stageIdRef.current;
-    if (current < p.unlockedStages) return false; // 解放済み行の遊び直しでは進行しない
 
     stageClearPending.current = true;
     if (clearTimer.current !== null) window.clearTimeout(clearTimer.current);
@@ -126,12 +125,15 @@ export default function App() {
     }
 
     if (current < STAGE_COUNT) {
-      const unlockedProgress = unlockNextStage(p, STAGE_COUNT);
-      progressRef.current = unlockedProgress;
-      setProgress(unlockedProgress);
-      const nextStageId = unlockedProgress.unlockedStages;
+      const isReplay = current < p.unlockedStages;
+      const nextStageId = current + 1;
+      if (!isReplay) {
+        const unlockedProgress = unlockNextStage(p, STAGE_COUNT);
+        progressRef.current = unlockedProgress;
+        setProgress(unlockedProgress);
+      }
       const nextStage = getStage(nextStageId);
-      setClearToast({ stage: nextStage, title: nextStage.label + ' UNLOCKED' });
+      setClearToast({ stage: nextStage, title: nextStage.label + (isReplay ? ' NEXT' : ' UNLOCKED') });
       gameRef.current?.prepareStageAdvance();
       stageAdvanceTimer.current = window.setTimeout(() => {
         stageIdRef.current = nextStageId;
