@@ -3,7 +3,8 @@ import { getAudioContext } from './sfx';
 
 const BASE = '/voice/';
 
-const RECORDED_ROMAJIS = [
+// 提供された個別収録のボイス(public/voice/clips/<名前>.wav)。ここに無い文字は無音にする
+const CLIP_NAMES = [
   'a', 'i', 'u', 'e', 'o',
   'ka', 'ki', 'ku', 'ke', 'ko',
   'sa', 'shi', 'su', 'se', 'so',
@@ -18,13 +19,12 @@ const RECORDED_ROMAJIS = [
   'sha', 'sho', 'cho',
 ] as const;
 
-const voiceFileByRomaji: Record<string, string> = Object.fromEntries(
-  RECORDED_ROMAJIS.map((romaji) => [romaji, `clips/${romaji}.wav`]),
-);
+const voiceFileByClip: Record<string, string> = Object.fromEntries(CLIP_NAMES.map((name) => [name, `clips/${name}.wav`]));
 
 const buffers = new Map<string, AudioBuffer>();
-const pendingPlays: Array<{ romaji: string; excited: boolean }> = [];
-let state: 'idle' | 'loading' | 'ready' | 'absent' = 'idle';
+const inflight = new Set<string>();
+const pendingPlays: Array<{ clip: string; excited: boolean }> = [];
+const failed = new Set<string>(); // 読み込みに失敗したクリップ(次の preload で再試行する)
 
 function startPlayback(ctx: AudioContext, buf: AudioBuffer, excited: boolean) {
   const src = ctx.createBufferSource();
@@ -36,23 +36,23 @@ function startPlayback(ctx: AudioContext, buf: AudioBuffer, excited: boolean) {
   src.start();
 }
 
-function playPending(ctx: AudioContext, romaji: string, buf: AudioBuffer) {
-  const queued = pendingPlays.filter((play) => play.romaji === romaji);
+function playPending(ctx: AudioContext, clip: string, buf: AudioBuffer) {
+  const queued = pendingPlays.filter((play) => play.clip === clip);
   if (queued.length === 0) return;
   for (let index = pendingPlays.length - 1; index >= 0; index--) {
-    if (pendingPlays[index].romaji === romaji) pendingPlays.splice(index, 1);
+    if (pendingPlays[index].clip === clip) pendingPlays.splice(index, 1);
   }
   for (const { excited } of queued) {
     try {
       startPlayback(ctx, buf, excited);
     } catch {
-      /* 音声出力に失敗しても合成音声へは切り替えない */
+      /* 音声出力に失敗しても続行する */
     }
   }
 }
 
-async function fetchClip(ctx: AudioContext, romaji: string): Promise<AudioBuffer | null> {
-  const file = voiceFileByRomaji[romaji];
+async function fetchClip(ctx: AudioContext, clip: string): Promise<AudioBuffer | null> {
+  const file = voiceFileByClip[clip];
   if (!file) return null;
   try {
     const res = await fetch(BASE + encodeURIComponent(file));
@@ -63,53 +63,50 @@ async function fetchClip(ctx: AudioContext, romaji: string): Promise<AudioBuffer
   }
 }
 
-/**
- * 遊ぶステージの音声だけを読み込む（初回のユーザー操作後に呼ぶ）。
- * 1つ目が無ければ音源未設置と判断して以降は読みに行かない。
- */
-export function preloadClips(romajis: string[]) {
+/** 遊ぶステージの音声だけを読み込む(初回のユーザー操作後に呼ぶ)。読み込み中のものは重ねて読まない */
+export function preloadClips(clips: string[]) {
   const ctx = getAudioContext();
-  if (!ctx || state === 'absent' || state === 'loading') return;
-  const missing = romajis.filter((r) => voiceFileByRomaji[r] && !buffers.has(r));
+  if (!ctx) return;
+  const missing = clips.filter((c) => voiceFileByClip[c] && !buffers.has(c) && !inflight.has(c));
   if (missing.length === 0) return;
-  state = 'loading';
+  missing.forEach((c) => {
+    inflight.add(c);
+    failed.delete(c);
+  });
 
-  void (async () => {
-    const first = await fetchClip(ctx, missing[0]);
-    if (!first && buffers.size === 0) {
-      state = 'absent'; // 音源が置かれていない構成
-      return;
-    }
-    if (first) {
-      buffers.set(missing[0], first);
-      playPending(ctx, missing[0], first);
-    }
-    await Promise.all(
-      missing.slice(1).map(async (r) => {
-        const b = await fetchClip(ctx, r);
-        if (b) {
-          buffers.set(r, b);
-          playPending(ctx, r, b);
-        }
-      }),
-    );
-    state = 'ready';
-  })();
+  void Promise.all(
+    missing.map(async (c) => {
+      const buf = await fetchClip(ctx, c);
+      inflight.delete(c);
+      if (buf) {
+        buffers.set(c, buf);
+        playPending(ctx, c, buf);
+      } else {
+        // 読めなかった分の待機は捨て、通信が戻れば次の preload で再試行される
+        failed.add(c);
+        for (let i = pendingPlays.length - 1; i >= 0; i--) if (pendingPlays[i].clip === c) pendingPlays.splice(i, 1);
+      }
+    }),
+  );
 }
 
-/** 収録ボイスで鳴らせたら true */
-export function playClip(romaji: string, excited = false): boolean {
+/** 収録ボイスがあるクリップ名か */
+export const hasClip = (clip: string) => !!voiceFileByClip[clip];
+
+/** 収録ボイスを鳴らす(読み込み中なら読み込み後に鳴らす)。鳴らせるなら true */
+export function playClip(clip: string, excited = false): boolean {
   const ctx = getAudioContext();
-  if (!ctx || !voiceFileByRomaji[romaji]) return false;
-  const buf = buffers.get(romaji);
+  if (!ctx || !voiceFileByClip[clip] || failed.has(clip)) return false;
+  const buf = buffers.get(clip);
   if (!buf) {
-    pendingPlays.push({ romaji, excited });
+    pendingPlays.push({ clip, excited });
+    preloadClips([clip]);
     return true;
   }
   try {
     startPlayback(ctx, buf, excited);
-    return true;
   } catch {
-    return true;
+    /* 再生に失敗しても続行する */
   }
+  return true;
 }

@@ -1,15 +1,8 @@
-// 発声の入口。提供された収録ボイスだけを使う。
+// 発声の入口。提供された収録ボイスだけを使う(音声合成など、生成した声は使わない)。
+import type { KanaChar } from './stages';
 import { playClip } from './voiceClips';
 
-export function initSpeech() {
-  // 実音声のみを使うため、端末の音声合成は初期化しない。
-}
-
-/** 呼び出し元との互換性を保つ。実音声の解錠は unlockSfx が担当する。 */
-export function unlockSpeech() {}
-
-export function speakKana(kana: string, opts: { excited?: boolean; romaji?: string } = {}) {
-  void kana;
-  if (!opts.romaji) return;
-  playClip(opts.romaji, opts.excited);
+/** 1文字を発音する。収録が無い文字は無音 */
+export function speakChar(c: KanaChar, { excited = false }: { excited?: boolean } = {}) {
+  playClip(c.clip, excited);
 }
