@@ -1,12 +1,12 @@
 {
   "name": "Kana Pop",
   "short_name": "Kana Pop",
-  "description": "Merge & learn Japanese kana",
+  "description": "Merge kana medals and learn to read hiragana",
   "start_url": "/",
   "display": "standalone",
   "orientation": "portrait",
-  "background_color": "#F7EFFF",
-  "theme_color": "#FFC6DF",
+  "background_color": "#0b121c",
+  "theme_color": "#0b121c",
   "icons": [
     { "src": "/favicon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any" }
   ]

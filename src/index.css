@@ -10,15 +10,220 @@ html, body, #root {
   -webkit-tap-highlight-color: transparent;
 }
 body {
-  font-family: 'M PLUS Rounded 1c', 'Zen Maru Gothic', sans-serif;
-  background:
-    radial-gradient(circle at 18% 12%, #FFE7F3 0%, rgba(255,231,243,0) 55%),
-    radial-gradient(circle at 82% 80%, #E3E0FF 0%, rgba(227,224,255,0) 58%),
-    linear-gradient(160deg, #F7EFFF 0%, #FDF1F6 48%, #F1F6FF 100%);
-  background-attachment: fixed;
-  touch-action: none;
+  font-family: 'Noto Sans JP', 'Hiragino Kaku Gothic ProN', 'Yu Gothic', 'Meiryo', sans-serif;
+  background: #0b121c;
   user-select: none;
 }
 canvas { touch-action: none; display: block; }
-.no-scrollbar::-webkit-scrollbar { display: none; }
-.no-scrollbar { scrollbar-width: none; }
+
+/* スクロールするのはこの枠だけ(body は固定)。盤面の外では縦スクロールできるようにする */
+.pop-root {
+  height: 100%; overflow-x: hidden; overflow-y: auto; touch-action: pan-y; box-sizing: border-box;
+  padding: 8px 8px calc(8px + env(safe-area-inset-bottom));
+}
+
+.pop {
+  /* 硬派なダーク配色で固定する(変数を上書きして子要素にも効かせる) */
+  --radius: 18px;
+  --bg: #0b121c; --bg2: #101a28; --text: #e6edf7; --muted: #8aa0ba;
+  --panel: rgba(120, 160, 210, .08); --panel-2: rgba(120, 160, 210, .15);
+  --line: rgba(140, 170, 210, .28); --line-soft: rgba(140, 170, 210, .14); --shadow: rgba(0, 0, 0, .6);
+  --accent: #e0a33a; --accent2: #c8531f; --on-accent: #1a1204; --warn: #e0902f; --c-info: #5aa0d6;
+  max-width: 480px; margin: 0 auto; padding: 14px 14px 20px; border-radius: 22px; box-sizing: border-box;
+  background: linear-gradient(180deg, #0f1824, var(--bg)); color: var(--text);
+  border: 1px solid var(--line-soft); box-shadow: 0 12px 40px var(--shadow);
+}
+
+/* ボタン */
+.pop .btn {
+  display: inline-flex; align-items: center; justify-content: center; gap: 6px; padding: 10px 18px; border-radius: 999px;
+  background: var(--panel-2); border: 2px solid var(--line); color: var(--text); font: inherit; font-weight: 800; font-size: 14px;
+  cursor: pointer; transition: transform .12s;
+}
+.pop .btn:active { transform: scale(.96); }
+.pop .btn.primary { background: linear-gradient(180deg, var(--accent), var(--accent2)); border-color: transparent; color: var(--on-accent); }
+.pop .btn.ghost { background: transparent; border-color: var(--line-soft); }
+.pop .btn.sm { padding: 5px 12px; font-size: 13px; }
+.pop .btn.big { padding: 14px 20px; border-radius: 22px; }
+.pop .btn small { font-size: 12px; color: var(--muted); }
+.pulse { animation: pop-pulse 1.8s ease-in-out infinite; }
+@keyframes pop-pulse { 0%, 100% { box-shadow: 0 0 0 0 rgba(224, 163, 58, .45); } 50% { box-shadow: 0 0 0 10px rgba(224, 163, 58, 0); } }
+.cta-row { display: flex; justify-content: center; gap: 10px; flex-wrap: wrap; }
+
+.pop-title { display: flex; flex-direction: column; align-items: center; gap: 10px; text-align: center; padding-bottom: 16px; }
+.pop-title h1 { margin: 0; font-size: 22px; color: var(--accent); letter-spacing: .04em; text-shadow: 0 0 22px rgba(224, 163, 58, .35); }
+.pop-brand { font-size: 11px; letter-spacing: .18em; color: var(--muted); font-weight: 800; }
+
+.pop-pill {
+  display: inline-flex; align-items: baseline; gap: 5px; padding: 5px 14px; border-radius: 999px;
+  background: var(--panel); border: 1px solid var(--line); font-size: 12px; color: var(--muted); font-weight: 700;
+}
+.pop-pill strong { font-size: 17px; color: var(--text); }
+.pop-pill.sm { padding: 3px 10px; font-size: 12px; }
+.pop-pill.sm strong { font-size: 16px; }
+
+.pop-stages { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; width: 100%; }
+.pop-stage {
+  display: flex; flex-direction: column; align-items: center; gap: 3px; padding: 12px 6px;
+  background: var(--panel); border: 2px solid var(--line-soft); border-radius: var(--radius);
+  color: var(--text); font-family: inherit; cursor: pointer; transition: transform .15s, border-color .15s;
+}
+.pop-stage:hover { transform: translateY(-2px); }
+.pop-stage.sel { border-color: var(--accent); background: color-mix(in srgb, var(--accent) 12%, transparent); }
+.pop-stage-no { font-size: 11px; letter-spacing: .1em; color: var(--muted); font-weight: 700; }
+.pop-stage strong { font-size: 14px; }
+
+/* DOM側のメダル(進化の並び・結果・ステージ選択) */
+.pop-bubble {
+  display: inline-flex; flex-direction: column; align-items: center; justify-content: center; flex: none;
+  border-radius: 50%; border: 3px solid var(--line); line-height: 1; transition: transform .2s, opacity .2s; box-sizing: border-box;
+}
+.pop-bubble.active { transform: scale(1.14); outline: 2px solid #fff; outline-offset: 2px; }
+.pop-bubble.dim { opacity: .5; filter: saturate(.55) brightness(.85); }
+.pop-b-glyph { font-weight: 700; color: #fff; text-shadow: 0 1px 2px rgba(0, 0, 0, .8); white-space: nowrap; }
+.pop-b-label { font-weight: 800; margin-top: 1px; text-shadow: 0 1px 2px rgba(0, 0, 0, .9); }
+
+.pop-top { display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px; gap: 6px; }
+.pop-top-right { display: flex; align-items: center; gap: 4px; }
+.pop-top-right .btn.sm { padding: 4px 9px; }
+/* 360px幅でも全部見えるよう、はみ出す分は折り返す(横スクロールにしない) */
+.pop-chain {
+  display: flex; flex-wrap: wrap; align-items: center; justify-content: center; gap: 6px 2px; padding: 8px 10px; margin-bottom: 8px;
+  background: var(--panel); border: 1px solid var(--line-soft); border-radius: 20px;
+}
+.pop-chain-item { display: inline-flex; align-items: center; gap: 2px; flex: none; }
+.pop-arrow { font-size: 10px; color: var(--muted); }
+.pop-bar { display: flex; align-items: center; gap: 8px; margin-bottom: 8px; }
+.pop-exp { flex: 1; height: 9px; border-radius: 99px; background: var(--panel-2); overflow: hidden; }
+.pop-exp div { height: 100%; border-radius: 99px; background: linear-gradient(90deg, var(--accent2), var(--accent)); transition: width .4s; }
+
+/* 盤面の高さは画面の高さから他の部品を引いた値。幅が足りないときは縦横比が崩れないよう幅から決める */
+.pop-field {
+  position: relative; display: flex; justify-content: center;
+  height: min(clamp(380px, calc(100dvh - 358px), 700px), calc((min(100vw, 480px) - 44px) * 660 / 420));
+}
+.pop-canvas { height: 100%; width: auto; max-width: 100%; aspect-ratio: 420 / 660; touch-action: none; border-radius: 26px; background: #0a1019; cursor: pointer; }
+.pop-hand { position: absolute; top: 200px; left: 0; right: 0; text-align: center; font-size: 44px; opacity: .75; pointer-events: none; animation: pop-swing 1.6s ease-in-out infinite; }
+@keyframes pop-swing { 0%, 100% { transform: translateX(-40px); } 50% { transform: translateX(40px); } }
+@keyframes pop { from { transform: scale(.6); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+
+.pop-toast {
+  position: absolute; left: 0; right: 0; margin: 0 auto; width: fit-content; max-width: calc(100% - 16px); top: 26%; z-index: 5; pointer-events: none; /* 中央寄せにtransformを使わない(登場アニメのscaleに上書きされて右にずれるため) */
+  display: flex; flex-direction: column; align-items: center; gap: 4px; padding: 12px 24px; border-radius: 24px;
+  background: var(--bg); border: 1px solid var(--line); box-shadow: 0 14px 36px var(--shadow);
+  font-size: 22px; font-weight: 900; color: var(--accent); animation: pop .4s ease; white-space: nowrap;
+}
+.pop-toast small { font-size: 12px; font-weight: 700; color: var(--muted); }
+
+.pop-overlay {
+  position: fixed; inset: 0; z-index: 50; display: flex; align-items: center; justify-content: center; padding: 20px;
+  background: color-mix(in srgb, var(--bg) 70%, transparent); backdrop-filter: blur(6px);
+}
+.pop-overlay.in-field { position: absolute; border-radius: 26px; }
+.pop-card {
+  width: 100%; max-width: 330px; max-height: 100%; overflow-y: auto; padding: 22px 20px; text-align: center; border-radius: 28px; box-sizing: border-box;
+  background: var(--bg); border: 1px solid var(--line); box-shadow: 0 18px 50px var(--shadow); animation: pop .4s ease;
+}
+.pop-card h2 { margin: 0 0 14px; color: var(--accent); font-size: 24px; }
+.pop-howto { text-align: left; font-size: 14px; line-height: 1.6; padding-left: 20px; margin: 0 0 16px; color: var(--text); }
+.pop-howto li { margin-bottom: 8px; }
+.pop-score { display: flex; flex-direction: column; gap: 2px; padding: 10px; border-radius: 18px; background: var(--panel); }
+.pop-score span { font-size: 11px; letter-spacing: .2em; color: var(--muted); font-weight: 700; }
+.pop-score strong { font-size: 44px; line-height: 1.1; }
+.pop-score small { font-size: 11px; color: var(--muted); font-weight: 700; }
+.pop-learned { margin: 14px 0 6px; font-size: 11px; color: var(--muted); font-weight: 700; }
+.pop-learned-row { display: flex; flex-wrap: wrap; justify-content: center; gap: 5px; margin-bottom: 16px; }
+
+.pop-listen { display: flex; justify-content: center; margin-top: 10px; }
+.pop-listen-glyph { font-size: 24px; font-weight: 700; color: #fff; }
+
+/* 最終形の進化(👑→💎→🌈)の表示 */
+.pop-tier {
+  display: inline-flex; align-items: center; gap: 3px; flex: none; padding: 4px 8px; border-radius: 999px;
+  border: 2px solid color-mix(in srgb, var(--tc, #888) 35%, transparent); background: var(--panel);
+  opacity: .5; filter: saturate(.5); transition: opacity .25s, filter .25s, box-shadow .25s;
+}
+.pop-tier.on { opacity: 1; filter: none; border-color: var(--tc); box-shadow: 0 0 12px color-mix(in srgb, var(--tc) 60%, transparent); }
+.pop-tier-icon { font-size: 18px; line-height: 1; }
+.pop-tier-n { font-size: 13px; font-weight: 900; color: var(--text); }
+.pop-tier.next { font-size: 11px; font-weight: 900; letter-spacing: .08em; color: var(--muted); border-style: dashed; }
+.pop-howto-sub { margin: 4px 0 8px; font-size: 12px; font-weight: 700; color: var(--muted); text-align: left; }
+.pop-final-rules { list-style: none; margin: 0 0 10px; padding: 0; display: flex; flex-direction: column; gap: 6px; font-size: 14px; text-align: left; }
+.pop-final-rules li { display: flex; justify-content: space-between; gap: 8px; padding: 6px 10px; border-radius: 10px; background: var(--panel); }
+.pop-final-rules b { color: var(--accent); }
+.pop-howto-note { margin: 0 0 14px; font-size: 12px; line-height: 1.6; color: var(--muted); text-align: left; }
+
+/* モード切替 */
+.pop-modes { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; width: 100%; }
+.pop-mode {
+  display: flex; flex-direction: column; gap: 4px; padding: 10px 12px; text-align: left; border-radius: var(--radius);
+  background: var(--panel); border: 2px solid var(--line-soft); color: var(--text); font-family: inherit; cursor: pointer;
+}
+.pop-mode strong { font-size: 14px; }
+.pop-mode span { font-size: 11px; line-height: 1.5; color: var(--muted); }
+.pop-mode b { color: var(--text); }
+.pop-mode.sel { border-color: var(--accent); background: color-mix(in srgb, var(--accent) 12%, transparent); }
+
+/* タイトル画面(PLAYを上に置いて一画面に収める) */
+.pop-topbar { display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px; }
+.pop-topbar-right { display: flex; align-items: center; gap: 6px; }
+.pop-play { width: 100%; display: flex; flex-direction: column; align-items: center; gap: 2px; padding: 12px 16px; }
+.pop-play-main { font-size: 22px; font-weight: 900; letter-spacing: .06em; }
+.pop-play-sub { font-size: 12px; font-weight: 700; opacity: .9; display: flex; gap: 8px; align-items: baseline; justify-content: center; flex-wrap: wrap; }
+.pop-play-glyphs { font-size: 15px; letter-spacing: .1em; }
+.pop-pick { margin: 6px 0 -2px; align-self: flex-start; font-size: 11px; font-weight: 700; letter-spacing: .08em; color: var(--muted); }
+.pop-stages .pop-stage { padding: 8px 2px; gap: 3px; }
+.pop-stages .pop-stage strong { font-size: 11px; line-height: 1.2; }
+.pop-stages .pop-stage .pop-stage-no { font-size: 10px; }
+.pop-reset { margin-top: 6px; opacity: .6; }
+
+/* コンボ・演出 */
+.pop-combo {
+  display: flex; align-items: baseline; gap: 5px;
+  padding: 3px 12px; border-radius: 999px; font-size: 13px; font-weight: 900; letter-spacing: .04em; color: #fff;
+  background: rgba(8, 12, 20, .78); border: 2px solid var(--cc, #fff); box-shadow: 0 0 14px color-mix(in srgb, var(--cc, #fff) 55%, transparent);
+  animation: pop-bump .28s ease-out;
+}
+.pop-combo b { font-size: 22px; line-height: 1; color: var(--cc, #fff); }
+.pop-combo span { color: var(--cc, #fff); font-size: 15px; }
+.pop-combo.m1 { --cc: #ffffff; }
+.pop-combo.m2 { --cc: #ffd966; }
+.pop-combo.m3 { --cc: #ff9a2e; }
+.pop-combo.m4 { --cc: #ff5a5a; }
+.pop-combo.m5 { --cc: #e0409a; }
+@keyframes pop-bump { 0% { transform: scale(.6); } 60% { transform: scale(1.25); } 100% { transform: scale(1); } }
+.pop-toast.miss { color: #ff8a8a; border-color: rgba(255, 110, 110, .45); font-size: 18px; }
+.pop-toast.miss small { color: var(--text); font-size: 13px; }
+.pop-stats { display: flex; justify-content: center; gap: 14px; flex-wrap: wrap; margin-top: 10px; font-size: 12px; color: var(--muted); font-weight: 700; }
+.pop-stats strong { color: var(--text); font-size: 16px; }
+.pop-stats em { color: var(--accent); font-style: normal; font-size: 11px; }
+.pop-confetti { position: absolute; inset: 0; z-index: 7; overflow: hidden; pointer-events: none; border-radius: 26px; }
+.pop-confetti span { position: absolute; top: -14px; opacity: 0; animation-name: pop-fall; animation-timing-function: linear; animation-fill-mode: forwards; }
+@keyframes pop-fall { 0% { transform: translateY(0) rotate(0deg); opacity: 1; } 100% { transform: translateY(720px) rotate(540deg); opacity: .9; } }
+@media (prefers-reduced-motion: reduce) {
+  .pop-combo { animation: none; }
+  .pop-confetti { display: none; }
+}
+
+/* コンボ表示は盤面の外(専用の行)に置く */
+.pop-combo-row { height: 34px; display: flex; align-items: center; justify-content: center; margin-bottom: 4px; }
+.pop-combo-hint { font-size: 11px; font-weight: 700; letter-spacing: .06em; color: var(--muted); opacity: .6; }
+
+/* 幅の狭い端末: 余白を詰める(進化バーは折り返して2行になるぶん盤面の高さを少し減らす) */
+@media (max-width: 430px) {
+  .pop-root { padding: 4px; }
+  .pop { padding: 10px 10px 16px; border-radius: 18px; }
+  .pop-field { height: min(clamp(380px, calc(100dvh - 404px), 700px), calc((100vw - 28px) * 660 / 420)); }
+  .pop-modes { gap: 6px; }
+  .pop-mode { padding: 8px 9px; }
+}
+
+/* 盤面の中に出す結果・一時停止カードは、低い盤面(380px)でも全部入るように詰める */
+.pop-overlay.in-field .pop-card { padding: 14px; }
+.pop-overlay.in-field .pop-card h2 { margin-bottom: 8px; font-size: 20px; }
+.pop-overlay.in-field .pop-score { padding: 6px; }
+.pop-overlay.in-field .pop-score strong { font-size: 34px; }
+.pop-overlay.in-field .pop-stats { margin-top: 6px; }
+.pop-overlay.in-field .pop-learned { margin: 8px 0 4px; }
+.pop-overlay.in-field .pop-learned-row { margin-bottom: 10px; }
+.pop-overlay.in-field .btn { padding: 8px 12px; font-size: 13px; }
