@@ -112,28 +112,30 @@ export function drawJellyBall(
   ctx.textAlign = 'center';
   ctx.textBaseline = 'middle';
   const kanaFont = (size: number) => `700 ${size}px "Zen Maru Gothic", "M PLUS Rounded 1c", sans-serif`;
-  let kanaSize = c.latin ? r * 0.7 : c.kana.length > 1 ? r * 0.58 : r * 0.82; // 拗音は2文字なので詰める
+  const hasRomaji = c.romaji.length > 0;
+  let kanaSize = c.latin ? r * 1.0 : c.kana.length > 1 ? (hasRomaji ? r * 0.78 : r * 0.95) : hasRomaji ? r * 1.0 : r * 1.2; // 拗音は2文字なので詰める
   ctx.font = kanaFont(kanaSize);
-  if (c.latin) {
-    // 読み面のローマ字は、リングに収まる幅まで縮める
+  {
+    // 2文字(拗音)やローマ字は、リングに収まる幅まで縮める
     const w = ctx.measureText(c.kana).width;
-    if (w > r * 1.45) {
-      kanaSize *= (r * 1.45) / w;
+    if (w > r * 1.6) {
+      kanaSize *= (r * 1.6) / w;
       ctx.font = kanaFont(kanaSize);
     }
   }
   ctx.strokeStyle = 'rgba(255,255,255,0.9)';
   ctx.lineWidth = r * 0.12;
   ctx.lineJoin = 'round';
-  ctx.strokeText(c.kana, 0, -r * 0.02);
-  ctx.fillText(c.kana, 0, -r * 0.02);
+  const kanaY = hasRomaji ? -r * 0.14 : r * 0.02;
+  ctx.strokeText(c.kana, 0, kanaY);
+  ctx.fillText(c.kana, 0, kanaY);
 
   // ローマ字（直下）
-  ctx.font = `700 ${Math.max(8, r * 0.3)}px "M PLUS Rounded 1c", sans-serif`;
+  ctx.font = `700 ${Math.max(11, r * 0.42)}px "M PLUS Rounded 1c", sans-serif`;
   ctx.fillStyle = 'rgba(120, 88, 115, 0.85)';
   ctx.lineWidth = r * 0.06;
-  ctx.strokeText(c.romaji, 0, r * 0.56);
-  ctx.fillText(c.romaji, 0, r * 0.56);
+  ctx.strokeText(c.romaji, 0, r * 0.62);
+  ctx.fillText(c.romaji, 0, r * 0.62);
 
   if (opts.finalTier === 1) {
     ctx.save();

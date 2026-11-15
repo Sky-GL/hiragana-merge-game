@@ -10,8 +10,8 @@ export default function LevelBar({ level, exp }: Props) {
   return (
     <div className="flex w-full items-center gap-2">
       <div className="flex h-7 shrink-0 items-center gap-1 rounded-full border border-white/80 bg-gradient-to-b from-[#FFE1EC] to-[#FFC6DF] px-2.5 shadow-sm">
-        <span className="text-[9px] font-black tracking-wider text-[#B4708C]">LV</span>
-        <span className="font-round text-base font-black leading-none text-[#6B4E68]">{level}</span>
+        <span className="text-[13px] font-black tracking-wider text-[#B4708C]">LV</span>
+        <span className="font-round text-xl font-black leading-none text-[#6B4E68]">{level}</span>
       </div>
       <div className="h-2.5 flex-1 overflow-hidden rounded-full border border-white/70 bg-white/50">
         <div

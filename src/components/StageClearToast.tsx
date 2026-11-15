@@ -13,12 +13,12 @@ export default function StageClearToast({ stage, title, subtitle, icon = '🔓' 
           <span className="text-2xl">{icon}</span>
           <span className="font-round text-xl font-black tracking-wide text-[#F58FB0]">{title}</span>
         </div>
-        {subtitle && <span className="text-xs font-black tracking-[0.12em] text-[#A98EBE]">{subtitle}</span>}
+        {subtitle && <span className="text-base font-black tracking-[0.12em] text-[#A98EBE]">{subtitle}</span>}
         <div className="flex items-center gap-1.5">
           {stage.chars.slice(0, 5).map((ch) => (
             <span
               key={ch.kana}
-              className="flex h-10 w-10 flex-col items-center justify-center rounded-full border border-white/90 shadow-sm"
+              className="flex h-12 w-12 flex-col items-center justify-center rounded-full border border-white/90 shadow-sm"
               style={{
                 background:
                   'radial-gradient(circle at 32% 26%, ' + shade(ch.base, 0.6) + ', ' + ch.base + ' 60%, ' + shade(ch.base, -0.12) + ')',
@@ -26,11 +26,11 @@ export default function StageClearToast({ stage, title, subtitle, icon = '🔓' 
             >
               <span
                 className="font-round font-bold leading-none text-[#5E4058]"
-                style={{ fontSize: ch.kana.length > 1 ? 11 : 15 }}
+                style={{ fontSize: ch.kana.length > 1 ? 16 : 21 }}
               >
                 {ch.kana}
               </span>
-              <span className="text-[7px] font-bold leading-none text-[#7A5B74]">{ch.romaji}</span>
+              <span className="text-[11px] font-bold leading-none text-[#7A5B74]">{ch.romaji}</span>
             </span>
           ))}
         </div>

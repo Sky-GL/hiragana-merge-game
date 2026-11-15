@@ -44,7 +44,7 @@ const markHelpSeen = () => {
 };
 
 const ROUND_BTN =
-  'flex h-8 items-center justify-center rounded-full border border-white/70 bg-white/45 text-[#6B4E68] shadow-sm backdrop-blur-md active:scale-95';
+  'flex h-10 items-center justify-center rounded-full border border-white/70 bg-white/45 text-[#6B4E68] shadow-sm backdrop-blur-md active:scale-95';
 
 export default function App() {
   const [save, setSave] = useState<PopSave>(loadPop);
@@ -273,20 +273,20 @@ export default function App() {
       <div className="flex h-full w-full flex-col items-center gap-2 overflow-y-auto px-3 pb-3 pt-3" style={{ touchAction: 'pan-y' }}>
         {/* 操作ボタン */}
         <div className="flex w-full max-w-[460px] shrink-0 items-center justify-between px-0.5">
-          <button data-testid="home" onClick={goHome} aria-label="Return to home" className={ROUND_BTN + ' px-3 text-[10px] font-black'}>
+          <button data-testid="home" onClick={goHome} aria-label="Return to home" className={ROUND_BTN + ' px-3 text-[15px] font-black'}>
             HOME
           </button>
           <div className="flex items-center gap-1">
-            <button data-testid="pause" onClick={togglePause} aria-label={paused ? 'Resume game' : 'Pause game'} className={ROUND_BTN + ' w-8 text-sm font-black'}>
+            <button data-testid="pause" onClick={togglePause} aria-label={paused ? 'Resume game' : 'Pause game'} className={ROUND_BTN + ' w-10 text-lg font-black'}>
               {paused ? '▶' : 'Ⅱ'}
             </button>
-            <button data-testid="retry" onClick={retry} aria-label="Reset current game" className={ROUND_BTN + ' w-8 text-base font-black'}>
+            <button data-testid="retry" onClick={retry} aria-label="Reset current game" className={ROUND_BTN + ' w-10 text-xl font-black'}>
               ↻
             </button>
-            <button onClick={toggleTilt} aria-label={tiltOn ? 'Disable tilt controls' : 'Enable tilt controls'} className={ROUND_BTN + ' w-8 text-[10px] font-black'}>
+            <button onClick={toggleTilt} aria-label={tiltOn ? 'Disable tilt controls' : 'Enable tilt controls'} className={ROUND_BTN + ' w-10 text-[15px] font-black'}>
               {tiltOn ? '📱✓' : '📱×'}
             </button>
-            <button onClick={() => setHelp(true)} aria-label="How to play" className={ROUND_BTN + ' w-8 text-xs'}>
+            <button onClick={() => setHelp(true)} aria-label="How to play" className={ROUND_BTN + ' w-10 text-base'}>
               ❓
             </button>
           </div>
@@ -303,12 +303,12 @@ export default function App() {
             <LevelBar level={save.level} exp={save.exp} />
           </div>
           <div className="flex shrink-0 items-center gap-1.5 rounded-full border border-white/70 bg-white/45 px-3 py-0.5 shadow-sm backdrop-blur-md">
-            <span className="text-sm">⭐</span>
-            <span data-testid="score" className="font-round text-lg font-black leading-none text-[#6B4E68]">{score}</span>
+            <span className="text-lg">⭐</span>
+            <span data-testid="score" className="font-round text-2xl font-black leading-none text-[#6B4E68]">{score}</span>
           </div>
           <div className="flex h-7 shrink-0 items-center gap-1 rounded-full border border-white/70 bg-white/45 px-2 text-[#6B4E68] shadow-sm backdrop-blur-md" title="BEST SCORE">
-            <span className="text-sm">👑</span>
-            <span className="font-round text-xs font-black leading-none">{bestNow}</span>
+            <span className="text-lg">👑</span>
+            <span className="font-round text-base font-black leading-none">{bestNow}</span>
           </div>
         </div>
 
@@ -317,7 +317,7 @@ export default function App() {
           {combo.n >= 2 && !over ? (
             <ComboPill n={combo.n} mult={combo.mult} />
           ) : (
-            <span className="text-[11px] font-black tracking-[0.2em] text-[#B49FC7]/70">🔥 COMBO</span>
+            <span className="text-[16px] font-black tracking-[0.2em] text-[#B49FC7]/70">🔥 COMBO</span>
           )}
         </div>
 
@@ -325,7 +325,7 @@ export default function App() {
         <div
           data-testid="field"
           className="relative flex w-full max-w-[460px] shrink-0 items-center justify-center"
-          style={{ height: 'min(clamp(380px, calc(100dvh - 400px), 700px), calc((min(100vw, 460px) - 24px) * 660 / 420))' }}
+          style={{ height: 'min(clamp(380px, calc(100dvh - 345px), 700px), calc((min(100vw, 460px) - 24px) * 660 / 420))' }}
         >
           <div className="relative flex h-full items-center justify-center">
             <canvas
@@ -341,7 +341,7 @@ export default function App() {
               <p className="font-round text-3xl font-black tracking-[0.12em] text-white drop-shadow">PAUSED</p>
               <button
                 onClick={togglePause}
-                className="mt-4 rounded-full border-2 border-white bg-gradient-to-b from-[#FFC6DF] to-[#F58FB0] px-8 py-3 font-round text-lg font-black text-white shadow-lg active:scale-95"
+                className="mt-4 rounded-full border-2 border-white bg-gradient-to-b from-[#FFC6DF] to-[#F58FB0] px-8 py-3 font-round text-2xl font-black text-white shadow-lg active:scale-95"
               >
                 ▶ RESUME
               </button>
@@ -385,13 +385,13 @@ export default function App() {
                 : 'radial-gradient(circle at 30% 25%, ' + shade(nextChar.base, 0.5) + ', ' + nextChar.base + ' 70%)',
           }}
         >
-          <span className="text-lg">🔊</span>
+          <span className="text-2xl">🔊</span>
           {mode === 'read' ? (
-            <span className="font-round text-sm font-black tracking-wide text-[#7A5B74]">次のメダルの発音を聞く</span>
+            <span className="font-round text-lg font-black tracking-wide text-[#7A5B74]">次のメダルの発音を聞く</span>
           ) : (
             <>
-              <span className="font-round text-lg font-bold leading-none text-[#5E4058]">{nextChar.kana}</span>
-              <span className="text-xs font-bold text-[#7A5B74]">{nextChar.romaji}</span>
+              <span className="font-round text-2xl font-bold leading-none text-[#5E4058]">{nextChar.kana}</span>
+              <span className="text-base font-bold text-[#7A5B74]">{nextChar.romaji}</span>
             </>
           )}
         </button>

@@ -51,8 +51,8 @@ export default function TitleScreen({
               animation: 'kp-bounce 1.8s ease-in-out ' + i * 0.12 + 's infinite',
             }}
           >
-            <span className="font-round text-base font-bold leading-none text-[#5E4058]">{c.kana}</span>
-            <span className="text-[9px] font-bold leading-none text-[#7A5B74]">{c.romaji}</span>
+            <span className="font-round text-xl font-bold leading-none text-[#5E4058]">{c.kana}</span>
+            <span className="text-[13px] font-bold leading-none text-[#7A5B74]">{c.romaji}</span>
           </div>
         ))}
       </div>
@@ -62,24 +62,24 @@ export default function TitleScreen({
         <h1 className="font-round text-5xl font-black tracking-tight text-[#F58FB0] drop-shadow-[0_4px_10px_rgba(245,143,176,0.35)]">
           Kana Pop
         </h1>
-        <p className="mt-1 text-sm font-bold tracking-[0.18em] text-[#A98EBE]">MERGE &amp; LEARN JAPANESE</p>
+        <p className="mt-1 text-lg font-bold tracking-[0.18em] text-[#A98EBE]">MERGE &amp; LEARN JAPANESE</p>
       </div>
 
       <div className="flex shrink-0 items-center gap-2">
         <div className="flex items-center gap-1.5 rounded-full border border-white/80 bg-gradient-to-b from-[#FFE1EC] to-[#FFC6DF] px-4 py-1.5 shadow-sm">
-          <span className="text-[10px] font-black tracking-wider text-[#B4708C]">LV</span>
-          <span className="font-round text-lg font-black leading-none text-[#6B4E68]">{playerLevel}</span>
+          <span className="text-[15px] font-black tracking-wider text-[#B4708C]">LV</span>
+          <span className="font-round text-2xl font-black leading-none text-[#6B4E68]">{playerLevel}</span>
         </div>
         {best > 0 && (
           <div className="flex items-center gap-2 rounded-full border border-white/70 bg-white/45 px-4 py-1.5 shadow-sm backdrop-blur-md">
-            <span className="text-sm">👑</span>
-            <span className="font-round text-base font-bold leading-none text-[#6B4E68]">{best}</span>
+            <span className="text-lg">👑</span>
+            <span className="font-round text-xl font-bold leading-none text-[#6B4E68]">{best}</span>
           </div>
         )}
         <button
           onClick={onHelp}
           aria-label="How to play"
-          className="flex h-9 w-9 items-center justify-center rounded-full border border-white/80 bg-white/50 text-base text-[#8A6E96] shadow-sm backdrop-blur-md active:scale-95"
+          className="flex h-9 w-9 items-center justify-center rounded-full border border-white/80 bg-white/50 text-xl text-[#8A6E96] shadow-sm backdrop-blur-md active:scale-95"
         >
           ❓
         </button>
@@ -103,9 +103,9 @@ export default function TitleScreen({
               (mode === m ? 'border-white bg-white/80 shadow-md ring-2 ring-[#F58FB0]/70' : 'border-white/70 bg-white/35')
             }
           >
-            <span className="text-lg leading-none">{icon}</span>
-            <span className="mt-0.5 text-[11px] font-black tracking-[0.14em] text-[#B4708C]">{name}</span>
-            <span className="font-round text-sm font-bold text-[#6B4E68]">{sample}</span>
+            <span className="text-2xl leading-none">{icon}</span>
+            <span className="mt-0.5 text-[16px] font-black tracking-[0.14em] text-[#B4708C]">{name}</span>
+            <span className="font-round text-lg font-bold text-[#6B4E68]">{sample}</span>
           </button>
         ))}
       </div>
@@ -120,7 +120,7 @@ export default function TitleScreen({
           <span className="text-2xl">▶</span>
           <span className="font-round text-2xl font-black tracking-wide">PLAY</span>
         </span>
-        <span className="font-round text-xs font-black tracking-[0.12em]">
+        <span className="font-round text-base font-black tracking-[0.12em]">
           STAGE {stage.id} · {stage.label} <span className="ml-1 tracking-[0.18em]">{stage.chars.map((c) => c.kana).join(' ')}</span>
         </span>
       </button>
@@ -140,19 +140,19 @@ export default function TitleScreen({
             >
               <span
                 className={
-                  'relative flex h-12 w-12 flex-col items-center justify-center rounded-full border shadow-md transition-all ' +
+                  'relative flex h-14 w-14 flex-col items-center justify-center rounded-full border shadow-md transition-all ' +
                   (active ? 'scale-110 border-white ring-2 ring-[#F58FB0]/70' : 'border-white/70')
                 }
                 style={{
                   background: 'radial-gradient(circle at 32% 26%, ' + shade(c.base, 0.55) + ', ' + c.base + ' 62%, ' + shade(c.base, -0.14) + ')',
                 }}
               >
-                <span className="font-round font-bold leading-none text-[#5E4058]" style={{ fontSize: s.cover.length > 1 ? 13 : 17 }}>
+                <span className="font-round font-bold leading-none text-[#5E4058]" style={{ fontSize: s.cover.length > 1 ? 19 : 25 }}>
                   {s.cover}
                 </span>
-                {cleared(s.id) && <span className="absolute -right-1 -top-1 text-sm drop-shadow">⭐</span>}
+                {cleared(s.id) && <span className="absolute -right-1 -top-1 text-lg drop-shadow">⭐</span>}
               </span>
-              <span className="text-[9px] font-black tracking-wider text-[#A98EBE]">{s.id}</span>
+              <span className="text-[13px] font-black tracking-wider text-[#A98EBE]">{s.id}</span>
             </button>
           );
         })}
@@ -160,12 +160,12 @@ export default function TitleScreen({
 
       <button
         onClick={onResetAll}
-        className="shrink-0 text-[11px] font-black tracking-[0.12em] text-[#A98EBE] underline decoration-[#A98EBE]/40 underline-offset-4 active:opacity-60"
+        className="shrink-0 text-[16px] font-black tracking-[0.12em] text-[#A98EBE] underline decoration-[#A98EBE]/40 underline-offset-4 active:opacity-60"
       >
         RESET ALL PROGRESS
       </button>
 
-      <p className="shrink-0 text-[10px] font-bold tracking-[0.1em] text-[#8A6E96]/80">CREATED BY SKY</p>
+      <p className="shrink-0 text-[15px] font-bold tracking-[0.1em] text-[#8A6E96]/80">CREATED BY SKY</p>
 
       <style>{'@keyframes kp-bounce{0%,100%{transform:translateY(0)}50%{transform:translateY(-12px)}}'}</style>
     </div>
