@@ -12,7 +12,7 @@ export default function EvolutionTree({ chars, unlocked, nextLevel, tier }: Prop
   return (
     <div
       data-testid="chain"
-      className="flex w-full flex-wrap items-center justify-center gap-x-1 gap-y-1.5 rounded-3xl border border-white/70 bg-white/35 px-3 py-2 shadow-[0_8px_24px_rgba(160,130,190,0.18)] backdrop-blur-md"
+      className="flex w-full flex-wrap items-center justify-center gap-x-0.5 gap-y-1.5 rounded-3xl border border-white/70 bg-white/35 px-2 py-2 shadow-[0_8px_24px_rgba(160,130,190,0.18)] backdrop-blur-md"
     >
       {chars.map((c, i) => {
         const known = i <= unlocked;
@@ -21,7 +21,7 @@ export default function EvolutionTree({ chars, unlocked, nextLevel, tier }: Prop
           <div key={c.kana + i} className="flex shrink-0 items-center gap-1">
             <div
               className={
-                'flex h-11 w-11 flex-col items-center justify-center rounded-full border transition-all duration-300 ' +
+                'flex h-[46px] w-[46px] flex-col items-center justify-center rounded-full border transition-all duration-300 ' +
                 (active ? 'scale-110 border-white ring-2 ring-white/90 ' : 'border-white/60 ') +
                 (known ? 'shadow-md' : 'opacity-60 saturate-50')
               }
@@ -33,13 +33,13 @@ export default function EvolutionTree({ chars, unlocked, nextLevel, tier }: Prop
             >
               <span
                 className="font-round font-bold leading-none text-[#5E4058]"
-                style={{ fontSize: c.kana.length > 1 ? 11 : 15 }}
+                style={{ fontSize: c.kana.length > 1 ? 15 : 20 }}
               >
                 {c.kana}
               </span>
-              <span className="mt-[1px] text-[8px] font-bold leading-none text-[#7A5B74]">{c.romaji}</span>
+              <span className="mt-[1px] text-[12px] font-bold leading-none text-[#7A5B74]">{c.romaji}</span>
             </div>
-            <span className="text-[10px] text-[#B49FC7]">▸</span>
+            <span className="text-[9px] text-[#B49FC7]">▸</span>
           </div>
         );
       })}
@@ -48,17 +48,17 @@ export default function EvolutionTree({ chars, unlocked, nextLevel, tier }: Prop
         return (
           <div key={f.tier} className="flex shrink-0 items-center gap-1">
             <span
-              className={'flex items-center gap-0.5 rounded-full border-2 bg-white/60 px-2 py-0.5 transition-all duration-300 ' + (on ? 'shadow-md' : 'opacity-50 saturate-50')}
+              className={'flex items-center gap-0.5 rounded-full border-2 bg-white/60 px-1.5 py-0.5 transition-all duration-300 ' + (on ? 'shadow-md' : 'opacity-50 saturate-50')}
               style={{ borderColor: on ? f.color : 'rgba(255,255,255,0.8)' }}
             >
-              <span className="text-lg leading-none">{f.icon}</span>
-              <span className="font-round text-[13px] font-black leading-none text-[#6B4E68]">{f.badge}</span>
+              <span className="text-2xl leading-none">{f.icon}</span>
+              <span className="font-round text-[19px] font-black leading-none text-[#6B4E68]">{f.badge}</span>
             </span>
-            <span className="text-[10px] text-[#B49FC7]">▸</span>
+            <span className="text-[9px] text-[#B49FC7]">▸</span>
           </div>
         );
       })}
-      <span className="shrink-0 rounded-full border-2 border-dashed border-[#D9C7F7] px-2 py-0.5 text-[10px] font-black tracking-wider text-[#A98EBE]">NEXT</span>
+      <span className="shrink-0 rounded-full border-2 border-dashed border-[#D9C7F7] px-2 py-0.5 text-[15px] font-black tracking-wider text-[#A98EBE]">NEXT</span>
     </div>
   );
 }

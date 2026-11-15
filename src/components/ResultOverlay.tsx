@@ -71,7 +71,7 @@ export default function ResultOverlay({ visible, grandFinale, chars, score, best
           <>
             <div className="text-5xl kp-rainbow-bounce">🌈</div>
             <div className="mt-1 font-round text-[27px] font-black leading-none tracking-wide kp-rainbow-text">CONGRATULATIONS!</div>
-            <div className="mt-2 rounded-full bg-[#6B4E68]/10 px-3 py-1 text-[10px] font-black tracking-[0.16em] text-[#6B4E68]">ALL STAGES CLEARED!</div>
+            <div className="mt-2 rounded-full bg-[#6B4E68]/10 px-3 py-1 text-[15px] font-black tracking-[0.16em] text-[#6B4E68]">ALL STAGES CLEARED!</div>
           </>
         ) : (
           <>
@@ -81,19 +81,19 @@ export default function ResultOverlay({ visible, grandFinale, chars, score, best
         )}
 
         <div className="mt-4 rounded-3xl bg-white/70 py-3">
-          <div className="text-[11px] font-bold tracking-[0.2em] text-[#A98EBE]">SCORE</div>
+          <div className="text-[16px] font-bold tracking-[0.2em] text-[#A98EBE]">SCORE</div>
           <div className="font-round text-5xl font-black leading-tight text-[#6B4E68]">{score}</div>
-          <div className="mt-1 text-[11px] font-bold text-[#B39CC4]">BEST {best}</div>
+          <div className="mt-1 text-[16px] font-bold text-[#B39CC4]">BEST {best}</div>
         </div>
 
-        <div className="mt-3 flex items-center justify-center gap-4 text-[11px] font-black tracking-wider text-[#A98EBE]">
+        <div className="mt-3 flex items-center justify-center gap-4 text-[16px] font-black tracking-wider text-[#A98EBE]">
           <span>
-            🔥 COMBO <span className="font-round text-base text-[#6B4E68]">{maxCombo}</span>
+            🔥 COMBO <span className="font-round text-xl text-[#6B4E68]">{maxCombo}</span>
             {newCombo && <span className="ml-1 text-[#F58FB0]">NEW!</span>}
           </span>
           {showMisses && (
             <span>
-              💭 MISS <span className="font-round text-base text-[#6B4E68]">{misses}</span>
+              💭 MISS <span className="font-round text-xl text-[#6B4E68]">{misses}</span>
             </span>
           )}
         </div>
@@ -103,14 +103,14 @@ export default function ResultOverlay({ visible, grandFinale, chars, score, best
           {chars.slice(0, unlocked + 1).map((c, i) => (
             <div
               key={c.kana + i}
-              className="flex h-9 w-9 flex-col items-center justify-center rounded-full border border-white/80 shadow-sm"
+              className="flex h-12 w-12 flex-col items-center justify-center rounded-full border border-white/80 shadow-sm"
               style={{
                 background:
                   'radial-gradient(circle at 32% 28%, ' + shade(c.base, 0.5) + ', ' + c.base + ' 62%, ' + shade(c.base, -0.15) + ')',
               }}
             >
-              <span className="font-round font-bold leading-none text-[#5E4058]" style={{ fontSize: c.kana.length > 1 ? 10 : 13 }}>{c.kana}</span>
-              <span className="text-[7px] font-bold leading-none text-[#7A5B74]">{c.romaji}</span>
+              <span className="font-round font-bold leading-none text-[#5E4058]" style={{ fontSize: c.kana.length > 1 ? 15 : 20 }}>{c.kana}</span>
+              <span className="text-[11px] font-bold leading-none text-[#7A5B74]">{c.romaji}</span>
             </div>
           ))}
         </div>
@@ -119,7 +119,7 @@ export default function ResultOverlay({ visible, grandFinale, chars, score, best
           <button
             onClick={onHome}
             aria-label="Home"
-            className="flex h-12 items-center justify-center rounded-full border border-white/80 bg-white/70 px-4 text-xs font-black text-[#6B4E68] shadow-md active:scale-95"
+            className="flex h-12 items-center justify-center rounded-full border border-white/80 bg-white/70 px-4 text-base font-black text-[#6B4E68] shadow-md active:scale-95"
           >
             HOME
           </button>

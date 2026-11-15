@@ -9,10 +9,10 @@ export function ComboPill({ n, mult }: { n: number; mult: number }) {
       className="kp-bump flex items-baseline gap-1.5 rounded-full border-2 bg-white/75 px-3 py-0.5 shadow-md backdrop-blur-md"
       style={{ borderColor: MULT_COLORS[mult], boxShadow: '0 0 14px ' + MULT_COLORS[mult] + '66' }}
     >
-      <span className="text-sm">🔥</span>
+      <span className="text-lg">🔥</span>
       <span className="font-round text-xl font-black leading-none" style={{ color: MULT_COLORS[mult] }}>{n}</span>
-      <span className="text-[11px] font-black tracking-wider text-[#8A6E96]">COMBO</span>
-      <span className="font-round text-sm font-black" style={{ color: MULT_COLORS[mult] }}>×{mult}</span>
+      <span className="text-[16px] font-black tracking-wider text-[#8A6E96]">COMBO</span>
+      <span className="font-round text-lg font-black" style={{ color: MULT_COLORS[mult] }}>×{mult}</span>
     </div>
   );
 }
@@ -22,8 +22,8 @@ export function MissToast({ title, sub }: { title: string; sub: string }) {
   return (
     <div className="pointer-events-none absolute inset-x-0 top-1/3 z-30 flex justify-center px-6">
       <div className="animate-pop flex flex-col items-center gap-1 rounded-[26px] border border-white/80 bg-white/85 px-6 py-3 shadow-[0_14px_36px_rgba(150,120,185,0.3)] backdrop-blur-xl">
-        <span className="font-round text-base font-black tracking-wide text-[#A98EBE]">{title}</span>
-        <span className="font-round text-lg font-black text-[#6B4E68]">{sub}</span>
+        <span className="font-round text-xl font-black tracking-wide text-[#A98EBE]">{title}</span>
+        <span className="font-round text-2xl font-black text-[#6B4E68]">{sub}</span>
       </div>
     </div>
   );

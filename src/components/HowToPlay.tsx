@@ -14,8 +14,8 @@ export default function HowToPlay({ visible, onClose }: Props) {
         <h2 className="text-center font-round text-2xl font-black text-[#F58FB0]">How to play</h2>
 
         <div className="mt-3 rounded-2xl border border-[#FFE6A4] bg-[#FFF9E5] px-3 py-3 text-center">
-          <p className="text-[11px] font-black tracking-[0.08em] text-[#B78035]">STAGE CLEAR RULE</p>
-          <p className="mt-1 text-[11px] font-bold leading-relaxed text-[#8A6E55]">
+          <p className="text-[16px] font-black tracking-[0.08em] text-[#B78035]">STAGE CLEAR RULE</p>
+          <p className="mt-1 text-[16px] font-bold leading-relaxed text-[#8A6E55]">
             FINAL + FINAL → 👑 FINAL
             <br />
             👑 FINAL + 👑 FINAL → 💎 FINAL
@@ -48,9 +48,9 @@ export default function HowToPlay({ visible, onClose }: Props) {
           <Step n={2} text="Two of the same letter merge into the next one.">
             <div className="flex items-center gap-1.5">
               <Ball level={0} />
-              <span className="text-lg font-black text-[#B49FC7]">+</span>
+              <span className="text-2xl font-black text-[#B49FC7]">+</span>
               <Ball level={0} />
-              <span className="text-lg font-black text-[#B49FC7]">=</span>
+              <span className="text-2xl font-black text-[#B49FC7]">=</span>
               <Ball level={1} />
             </div>
           </Step>
@@ -58,7 +58,7 @@ export default function HowToPlay({ visible, onClose }: Props) {
           <Step n={3} text="Listen — every letter says its own sound.">
             <div className="flex items-center gap-2">
               <span className="text-2xl">🔊</span>
-              <span className="font-round text-lg font-bold text-[#6B4E68]">
+              <span className="font-round text-2xl font-bold text-[#6B4E68]">
                 あ = <span className="text-[#F58FB0]">&quot;a&quot;</span>
               </span>
             </div>
@@ -66,7 +66,7 @@ export default function HowToPlay({ visible, onClose }: Props) {
         </ol>
 
         <div className="mt-5 rounded-2xl bg-white/70 px-4 py-3 text-center">
-          <p className="text-xs font-bold leading-relaxed text-[#8A6E96]">
+          <p className="text-base font-bold leading-relaxed text-[#8A6E96]">
             Keep the letters below the dotted line.
             <br />
             No penalties, no losing — just keep popping! 💕
@@ -88,12 +88,12 @@ export default function HowToPlay({ visible, onClose }: Props) {
 function Step({ n, text, children }: { n: number; text: string; children: React.ReactNode }) {
   return (
     <li className="flex items-start gap-3">
-      <span className="mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-[#F58FB0] text-xs font-black text-white">
+      <span className="mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-[#F58FB0] text-base font-black text-white">
         {n}
       </span>
       <div className="flex flex-col gap-2">
         {children}
-        <p className="text-[13px] font-bold leading-snug text-[#7A5B74]">{text}</p>
+        <p className="text-[19px] font-bold leading-snug text-[#7A5B74]">{text}</p>
       </div>
     </li>
   );
@@ -103,14 +103,14 @@ function Ball({ level }: { level: number }) {
   const c = SAMPLE[level];
   return (
     <span
-      className="flex h-9 w-9 flex-col items-center justify-center rounded-full border border-white/80 shadow-sm"
+      className="flex h-12 w-12 flex-col items-center justify-center rounded-full border border-white/80 shadow-sm"
       style={{
         background:
           'radial-gradient(circle at 32% 28%, ' + shade(c.base, 0.55) + ', ' + c.base + ' 62%, ' + shade(c.base, -0.14) + ')',
       }}
     >
-      <span className="font-round text-[13px] font-bold leading-none text-[#5E4058]">{c.kana}</span>
-      <span className="text-[7px] font-bold leading-none text-[#7A5B74]">{c.romaji}</span>
+      <span className="font-round text-[19px] font-bold leading-none text-[#5E4058]">{c.kana}</span>
+      <span className="text-[11px] font-bold leading-none text-[#7A5B74]">{c.romaji}</span>
     </span>
   );
 }
