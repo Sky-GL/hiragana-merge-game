@@ -1,19 +1,30 @@
-import { useCallback, useEffect, useRef, useState, type CSSProperties } from 'react';
-import { Bubble, Confetti, HowTo } from './components/PopParts';
+import { useCallback, useEffect, useRef, useState } from 'react';
+import EvolutionTree from './components/EvolutionTree';
+import HandHint from './components/HandHint';
+import HowToPlay from './components/HowToPlay';
+import LevelBar from './components/LevelBar';
+import LevelUpToast from './components/LevelUpToast';
+import { ComboPill, Confetti, MissToast } from './components/PopExtras';
+import ResultOverlay from './components/ResultOverlay';
+import StageClearToast from './components/StageClearToast';
+import TitleScreen from './components/TitleScreen';
 import { PopEngine, type NextMedal } from './game/engine';
 import { FINAL_TIERS } from './game/popFinal';
 import {
-  addExp, emptyPop, expToNext, loadPop, markCleared, recordBest, recordCombo, recordKey, savePop,
+  addExp, emptyPop, loadPop, markCleared, recordBest, recordCombo, recordKey, savePop,
   type PopMode, type PopSave,
 } from './game/popStore';
 import { unlockSfx } from './game/sfx';
-import { STAGES, STAGE_COUNT, getStage } from './game/stages';
 import { speakChar } from './game/speech';
+import { STAGE_COUNT, getStage, shade, type Stage } from './game/stages';
 import { preloadClips } from './game/voiceClips';
 
 const SEEN_KEY = 'kanapop.seenHelp';
 
-type Toast = { kind: 'level'; level: number } | { kind: 'tier' | 'clear' | 'miss'; text: string; sub: string };
+type Toast =
+  | { kind: 'level'; level: number }
+  | { kind: 'miss'; title: string; sub: string }
+  | { kind: 'clear'; stage: Stage; title: string; subtitle?: string; icon: string };
 type Over = { score: number; grand: boolean; maxCombo: number; misses: number; newCombo: boolean };
 
 const hasSeenHelp = () => {
@@ -31,6 +42,9 @@ const markHelpSeen = () => {
     /* 保存できなくても動作に影響させない */
   }
 };
+
+const ROUND_BTN =
+  'flex h-8 items-center justify-center rounded-full border border-white/70 bg-white/45 text-[#6B4E68] shadow-sm backdrop-blur-md active:scale-95';
 
 export default function App() {
   const [save, setSave] = useState<PopSave>(loadPop);
@@ -50,8 +64,8 @@ export default function App() {
   const [paused, setPaused] = useState(false);
   const [tiltOn, setTiltOn] = useState(false);
 
-  const canvasRef = useRef<HTMLCanvasElement>(null);
   const engineRef = useRef<PopEngine | null>(null);
+  const canvasRef = useRef<HTMLCanvasElement>(null);
   const toastTimer = useRef<number | null>(null);
   const advanceTimer = useRef<number | null>(null);
   const stage = getStage(stageId);
@@ -82,12 +96,13 @@ export default function App() {
     setTiltOn(false);
   }, []);
 
-  useEffect(() => {
-    return () => {
+  useEffect(
+    () => () => {
       if (toastTimer.current !== null) window.clearTimeout(toastTimer.current);
       if (advanceTimer.current !== null) window.clearTimeout(advanceTimer.current);
-    };
-  }, []);
+    },
+    [],
+  );
 
   // プレイ画面に入ったらエンジンを起動、離れたら破棄
   useEffect(() => {
@@ -108,7 +123,7 @@ export default function App() {
         showToast(
           {
             kind: 'miss',
-            text: hadCombo >= 3 ? `✗ コンボ ${hadCombo} が途切れた` : '✗ ちがうよ',
+            title: hadCombo >= 3 ? '💭 COMBO ' + hadCombo + ' ENDED' : '💭 NOT QUITE',
             sub: `${a.kana} = ${a.romaji}  ／  ${b.kana} = ${b.romaji}`,
           },
           2000,
@@ -126,9 +141,11 @@ export default function App() {
         const final = stage.chars[stage.chars.length - 1];
         showToast(
           {
-            kind: 'tier',
-            text: `${info.icon} ${final.kana} ×${info.badge}`,
-            sub: t === 3 ? `🌈 RAINBOW BONUS +300 (+${points}点)` : `+${points}点`,
+            kind: 'clear',
+            stage,
+            icon: info.icon,
+            title: `${final.kana} ×${info.badge}`,
+            subtitle: t === 3 ? `RAINBOW BONUS! +300 (+${points})` : `+${points}`,
           },
           2200,
         );
@@ -139,13 +156,13 @@ export default function App() {
         commit(markCleared(saveRef.current, key));
         if (stageId < STAGE_COUNT) {
           const nextStage = getStage(stageId + 1);
-          showToast({ kind: 'clear', text: `🎉 STAGE ${stageId} クリア!`, sub: `次は STAGE ${stageId + 1}「${nextStage.title}」` }, 1800);
+          showToast({ kind: 'clear', stage: nextStage, icon: '🎉', title: 'STAGE ' + stageId + ' CLEAR!', subtitle: 'NEXT · ' + nextStage.label }, 1800);
           advanceTimer.current = window.setTimeout(() => {
             resetRound();
             setStageId(stageId + 1);
           }, 1500);
         } else {
-          showToast({ kind: 'clear', text: '🏆 全ステージ制覇!', sub: 'おめでとうございます' }, 2500);
+          showToast({ kind: 'clear', stage, icon: '🏆', title: 'ALL CLEAR!', subtitle: 'ALL STAGES CLEARED' }, 2500);
           advanceTimer.current = window.setTimeout(() => engine.finish(true), 1200);
         }
       },
@@ -179,7 +196,7 @@ export default function App() {
     engineRef.current?.restart();
   };
 
-  const toTitle = () => {
+  const goHome = () => {
     if (advanceTimer.current !== null) window.clearTimeout(advanceTimer.current);
     resetRound();
     setPhase('title');
@@ -220,181 +237,166 @@ export default function App() {
   const setMode = (m: PopMode) => commit({ ...saveRef.current, mode: m });
 
   const resetAllProgress = () => {
-    if (!window.confirm('すべての進行とベスト記録をリセットしますか?')) return;
+    if (!window.confirm('すべての学習進行とBESTをリセットしますか？')) return;
     commit(emptyPop(saveRef.current.mode));
     setStageId(1);
   };
 
+  const bestNow = save.best[recordKey(mode, stageId)] || 0;
+
   // ---------- タイトル(ステージ選択) ----------
-  // スマホで一画面に収まるよう、PLAYはモード選択の直下(ステージ一覧より上)に置く。
   if (phase === 'title') {
-    const bestHere = save.best[recordKey(mode, stageId)] || 0;
     return (
-      <div className="pop-root">
-        <div className="screen pop">
-          <div className="pop-topbar">
-            <span className="pop-brand">KANA POP</span>
-            <div className="pop-topbar-right">
-              <span className="pop-pill sm">Lv <strong>{save.level}</strong></span>
-              {bestHere > 0 && <span className="pop-pill sm">👑 <strong>{bestHere}</strong></span>}
-              <button className="btn ghost sm" onClick={() => setHelp(true)} aria-label="あそびかた">❓</button>
-            </div>
-          </div>
-          <div className="pop-title">
-            <h1>かなポップ</h1>
-
-            <div className="pop-modes">
-              <button className={`pop-mode ${mode === 'read' ? 'sel' : ''}`} onClick={() => setMode('read')}>
-                <strong>📖 読みモード</strong>
-                <span>文字 <b>あ</b> と読み <b>a</b> のペアで合体。文字を読まないと進めません</span>
-              </button>
-              <button className={`pop-mode ${mode === 'normal' ? 'sel' : ''}`} onClick={() => setMode('normal')}>
-                <strong>🫧 ふつう</strong>
-                <span>同じ文字どうしが合体(元のかなポップと同じ)</span>
-              </button>
-            </div>
-
-            <button className="btn primary big pulse pop-play" onClick={play}>
-              <span className="pop-play-main">▶ PLAY</span>
-              <span className="pop-play-sub">
-                STAGE {stageId} {stage.title}
-                <span className="pop-play-glyphs">{stage.chars.map((c) => c.kana).join(' ')}</span>
-              </span>
-            </button>
-
-            <p className="pop-pick">ステージを選ぶ</p>
-            <div className="pop-stages">
-              {STAGES.map((s) => (
-                <button key={s.id} className={`pop-stage ${s.id === stageId ? 'sel' : ''}`} onClick={() => setStageId(s.id)}>
-                  <Bubble item={{ ...s.chars[0], kana: s.cover }} size={38} hideLabel />
-                  <span className="pop-stage-no">{s.id}{save.cleared[recordKey(mode, s.id)] ? ' ★' : ''}</span>
-                  <strong>{s.title}</strong>
-                </button>
-              ))}
-            </div>
-            <button className="btn ghost sm pop-reset" onClick={resetAllProgress}>進行をリセット</button>
-          </div>
-          {help && <HowTo mode={mode} onClose={closeHelp} />}
-        </div>
+      <div className="relative h-full w-full">
+        <TitleScreen
+          best={bestNow}
+          playerLevel={save.level}
+          mode={mode}
+          cleared={(id) => !!save.cleared[recordKey(mode, id)]}
+          stageId={stageId}
+          onMode={setMode}
+          onSelectStage={setStageId}
+          onPlay={play}
+          onHelp={() => setHelp(true)}
+          onResetAll={resetAllProgress}
+        />
+        <HowToPlay visible={help} onClose={closeHelp} />
       </div>
     );
   }
 
   // ---------- プレイ ----------
-  const cur = stage.chars[Math.min(nextLevel, stage.chars.length - 1)];
-  const need = expToNext(save.level);
-  const bestNow = save.best[recordKey(mode, stageId)] || 0;
+  const nextChar = stage.chars[Math.min(nextLevel, stage.chars.length - 1)];
 
   return (
-    <div className="pop-root">
-      <div className="screen pop">
-        <div className="pop-top">
-          <button className="btn ghost sm" onClick={toTitle}>← ステージ選択</button>
-          <div className="pop-top-right">
-            <button className="btn ghost sm" onClick={togglePause} aria-label={paused ? '再開' : '一時停止'}>{paused ? '▶' : 'Ⅱ'}</button>
-            <button className="btn ghost sm" onClick={retry} aria-label="やり直す">↻</button>
-            <button className="btn ghost sm" onClick={toggleTilt} aria-label="傾き操作">{tiltOn ? '📱✓' : '📱×'}</button>
-            <button className="btn ghost sm" onClick={() => setHelp(true)} aria-label="あそびかた">❓</button>
+    <div className="relative h-full w-full">
+      <div className="flex h-full w-full flex-col items-center gap-2 overflow-y-auto px-3 pb-3 pt-3" style={{ touchAction: 'pan-y' }}>
+        {/* 操作ボタン */}
+        <div className="flex w-full max-w-[460px] shrink-0 items-center justify-between px-0.5">
+          <button data-testid="home" onClick={goHome} aria-label="Return to home" className={ROUND_BTN + ' px-3 text-[10px] font-black'}>
+            HOME
+          </button>
+          <div className="flex items-center gap-1">
+            <button data-testid="pause" onClick={togglePause} aria-label={paused ? 'Resume game' : 'Pause game'} className={ROUND_BTN + ' w-8 text-sm font-black'}>
+              {paused ? '▶' : 'Ⅱ'}
+            </button>
+            <button data-testid="retry" onClick={retry} aria-label="Reset current game" className={ROUND_BTN + ' w-8 text-base font-black'}>
+              ↻
+            </button>
+            <button onClick={toggleTilt} aria-label={tiltOn ? 'Disable tilt controls' : 'Enable tilt controls'} className={ROUND_BTN + ' w-8 text-[10px] font-black'}>
+              {tiltOn ? '📱✓' : '📱×'}
+            </button>
+            <button onClick={() => setHelp(true)} aria-label="How to play" className={ROUND_BTN + ' w-8 text-xs'}>
+              ❓
+            </button>
           </div>
         </div>
 
-        <div className="pop-chain">
-          {stage.chars.map((c, i) => (
-            <span key={`${c.kana}${i}`} className="pop-chain-item">
-              <Bubble item={c} size={42} active={i === nextLevel} dim={i > unlocked} />
-              <span className="pop-arrow">▸</span>
-            </span>
-          ))}
-          {/* 最終形の進化: 👑2 → 💎4 → 🌈8 → 次のステージ。到達した段階が点灯する */}
-          {FINAL_TIERS.slice(1).map((f) => (
-            <span key={f.tier} className="pop-chain-item">
-              <span className={`pop-tier ${tier >= f.tier ? 'on' : ''}`} style={{ '--tc': f.color } as CSSProperties}>
-                <span className="pop-tier-icon">{f.icon}</span>
-                <span className="pop-tier-n">{f.badge}</span>
-              </span>
-              <span className="pop-arrow">▸</span>
-            </span>
-          ))}
-          <span className="pop-tier next">NEXT</span>
+        {/* 進化ツリー（常時表示。5文字すべての読みと 👑💎🌈 の凡例つき） */}
+        <div className="w-full max-w-[460px] shrink-0">
+          <EvolutionTree chars={stage.chars} unlocked={unlocked} nextLevel={nextLevel} tier={tier} />
         </div>
 
-        <div className="pop-bar">
-          <span className="pop-pill sm">Lv <strong>{save.level}</strong></span>
-          <div className="pop-exp"><div style={{ width: `${Math.min(100, (save.exp / need) * 100)}%` }} /></div>
-          <span className="pop-pill sm">⭐ <strong>{score}</strong></span>
-          <span className="pop-pill sm">👑 <strong>{Math.max(bestNow, 0)}</strong></span>
+        {/* Lv・経験値・スコア・ベスト（数字とバーだけの非言語UI） */}
+        <div className="flex w-full max-w-[460px] shrink-0 items-center gap-2 px-1">
+          <div className="min-w-0 flex-1">
+            <LevelBar level={save.level} exp={save.exp} />
+          </div>
+          <div className="flex shrink-0 items-center gap-1.5 rounded-full border border-white/70 bg-white/45 px-3 py-0.5 shadow-sm backdrop-blur-md">
+            <span className="text-sm">⭐</span>
+            <span data-testid="score" className="font-round text-lg font-black leading-none text-[#6B4E68]">{score}</span>
+          </div>
+          <div className="flex h-7 shrink-0 items-center gap-1 rounded-full border border-white/70 bg-white/45 px-2 text-[#6B4E68] shadow-sm backdrop-blur-md" title="BEST SCORE">
+            <span className="text-sm">👑</span>
+            <span className="font-round text-xs font-black leading-none">{bestNow}</span>
+          </div>
         </div>
 
         {/* コンボは盤面の外に出す(盤面の中に置くと、上部を左右に動く「次のメダル」を隠すため)。高さは固定してレイアウトを揺らさない */}
-        <div className="pop-combo-row">
+        <div data-testid="combo-row" className="flex h-9 shrink-0 items-center justify-center">
           {combo.n >= 2 && !over ? (
-            <div key={combo.n} className={`pop-combo m${combo.mult}`}>
-              🔥 <b>{combo.n}</b> COMBO <span>×{combo.mult}</span>
-            </div>
+            <ComboPill n={combo.n} mult={combo.mult} />
           ) : (
-            <span className="pop-combo-hint">合体を続けるとコンボ!</span>
+            <span className="text-[11px] font-black tracking-[0.2em] text-[#B49FC7]/70">🔥 COMBO</span>
           )}
         </div>
 
-        <div className="pop-field">
-          <canvas ref={canvasRef} className="pop-canvas" />
-          {hint && !over && !help && <div className="pop-hand">👆</div>}
-          {confetti > 0 && <Confetti key={confetti} />}
-
-          {toast?.kind === 'level' && <div className="pop-toast">✨ Lv {toast.level} ✨</div>}
-          {toast && toast.kind !== 'level' && (
-            <div className={`pop-toast ${toast.kind === 'miss' ? 'miss' : ''}`}>{toast.text}<small>{toast.sub}</small></div>
-          )}
-
+        {/* フィールド */}
+        <div
+          data-testid="field"
+          className="relative flex w-full max-w-[460px] shrink-0 items-center justify-center"
+          style={{ height: 'min(clamp(380px, calc(100dvh - 400px), 700px), calc((min(100vw, 460px) - 24px) * 660 / 420))' }}
+        >
+          <div className="relative flex h-full items-center justify-center">
+            <canvas
+              data-testid="canvas"
+              ref={canvasRef}
+              className="h-full w-auto max-w-full rounded-[30px]"
+              style={{ aspectRatio: '420 / 660' }}
+            />
+            <HandHint visible={hint && !over && !help} />
+          </div>
           {paused && !over && (
-            <div className="pop-overlay in-field">
-              <div className="pop-card">
-                <h2>PAUSED</h2>
-                <button className="btn primary" onClick={togglePause}>▶ つづける</button>
-              </div>
+            <div className="absolute inset-0 z-30 flex flex-col items-center justify-center rounded-[30px] bg-[#6B4E68]/35 backdrop-blur-sm">
+              <p className="font-round text-3xl font-black tracking-[0.12em] text-white drop-shadow">PAUSED</p>
+              <button
+                onClick={togglePause}
+                className="mt-4 rounded-full border-2 border-white bg-gradient-to-b from-[#FFC6DF] to-[#F58FB0] px-8 py-3 font-round text-lg font-black text-white shadow-lg active:scale-95"
+              >
+                ▶ RESUME
+              </button>
             </div>
           )}
-
-          {over && (
-            <div className="pop-overlay in-field">
-              <div className="pop-card">
-                <h2>{over.grand ? '🏆 ALL CLEAR!' : 'Finish! 🎉'}</h2>
-                <div className="pop-score">
-                  <span>SCORE</span>
-                  <strong>{over.score}</strong>
-                  <small>BEST {Math.max(bestNow, over.score)}</small>
-                </div>
-                <div className="pop-stats">
-                  <span>🔥 最大コンボ <strong>{over.maxCombo}</strong>{over.newCombo && <em> NEW!</em>}</span>
-                  {mode === 'read' && <span>✗ 読み間違い <strong>{over.misses}</strong></span>}
-                </div>
-                <p className="pop-learned">今回出会った文字</p>
-                <div className="pop-learned-row">
-                  {stage.chars.slice(0, unlocked + 1).map((c, i) => (
-                    <Bubble key={`${c.kana}${i}`} item={c} size={44} />
-                  ))}
-                </div>
-                <div className="cta-row">
-                  <button className="btn" onClick={toTitle}>🏠 ステージ選択</button>
-                  <button className="btn primary" onClick={retry}>↻ もう一回</button>
-                </div>
-              </div>
-            </div>
-          )}
+          {confetti > 0 && <Confetti key={confetti} />}
+          <LevelUpToast level={toast?.kind === 'level' ? toast.level : null} unlockedChar={null} />
+          {toast?.kind === 'miss' && <MissToast title={toast.title} sub={toast.sub} />}
+          <StageClearToast
+            stage={toast?.kind === 'clear' ? toast.stage : null}
+            title={toast?.kind === 'clear' ? toast.title : ''}
+            subtitle={toast?.kind === 'clear' ? toast.subtitle : undefined}
+            icon={toast?.kind === 'clear' ? toast.icon : undefined}
+          />
+          <ResultOverlay
+            visible={!!over}
+            grandFinale={!!over?.grand}
+            chars={stage.chars}
+            score={over?.score ?? 0}
+            best={Math.max(bestNow, over?.score ?? 0)}
+            unlocked={unlocked}
+            maxCombo={over?.maxCombo ?? 0}
+            newCombo={!!over?.newCombo}
+            misses={over?.misses ?? 0}
+            showMisses={mode === 'read'}
+            onRetry={retry}
+            onHome={goHome}
+          />
         </div>
 
-        <div className="pop-listen">
+        {/* 発音: 読みモードでは文字・ローマ字を出さない(答えになるため)。聞きたいときだけ発音を鳴らす */}
+        <button
+          data-testid="listen"
+          onClick={listen}
+          aria-label="Listen"
+          className="flex shrink-0 items-center gap-2 rounded-full border border-white/80 px-4 py-1.5 shadow-md active:scale-95"
+          style={{
+            background:
+              mode === 'read'
+                ? 'linear-gradient(180deg, #FFFFFF, #F3E9FA)'
+                : 'radial-gradient(circle at 30% 25%, ' + shade(nextChar.base, 0.5) + ', ' + nextChar.base + ' 70%)',
+          }}
+        >
+          <span className="text-lg">🔊</span>
           {mode === 'read' ? (
-            // 読みモードでは文字・ローマ字を出さない(答えになるため)。聞きたいときだけ発音を鳴らす
-            <button className="btn" onClick={listen}>🔊 次のメダルの発音を聞く</button>
+            <span className="font-round text-sm font-black tracking-wide text-[#7A5B74]">次のメダルの発音を聞く</span>
           ) : (
-            <button className="btn" onClick={listen}>
-              🔊 <span className="pop-listen-glyph">{cur.kana}</span> <small>{cur.romaji}</small>
-            </button>
+            <>
+              <span className="font-round text-lg font-bold leading-none text-[#5E4058]">{nextChar.kana}</span>
+              <span className="text-xs font-bold text-[#7A5B74]">{nextChar.romaji}</span>
+            </>
           )}
-        </div>
-        {help && <HowTo mode={mode} onClose={closeHelp} />}
+        </button>
       </div>
+      <HowToPlay visible={help} onClose={closeHelp} />
     </div>
   );
 }

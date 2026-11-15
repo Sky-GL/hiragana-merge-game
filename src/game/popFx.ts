@@ -113,7 +113,7 @@ export class Fx {
       ctx.textBaseline = 'middle';
       ctx.lineJoin = 'round';
       ctx.lineWidth = Math.max(3, s * 0.2);
-      ctx.strokeStyle = 'rgba(5, 9, 16, 0.92)';
+      ctx.strokeStyle = 'rgba(255, 255, 255, 0.95)';
       ctx.strokeText(p.text, p.x, p.y);
       ctx.fillStyle = p.color;
       ctx.fillText(p.text, p.x, p.y);

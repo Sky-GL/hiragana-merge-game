@@ -2,7 +2,7 @@
 
 **本番URL: https://kana-pop-seven.vercel.app**
 
-文字メダルを落として合体させ、ひらがなを「読む」練習をするダーク基調のマージゲーム。
+文字メダルを落として合体させ、ひらがなを「読む」練習をするかわいいパステルのジェリー表現のマージゲーム(見た目は元のかなポップのまま)。
 
 - Vite + React + TypeScript
 - 物理: Matter.js（描画は Canvas 2D の自前レンダラ）
@@ -48,10 +48,11 @@ npm run dev
 | 文字・ローマ字・ステージ構成 | `src/game/stages.ts` |
 | 物理・ルール・描画の本体 | `src/game/engine.ts` |
 | コンボ倍率・演出 | `src/game/popFx.ts` |
-| 最終形（👑💎🌈）の定義と飾り | `src/game/popFinal.ts` |
+| 最終形（👑💎🌈）の定義（飾りの描画は draw.ts） | `src/game/popFinal.ts` |
 | 進捗の保存 | `src/game/popStore.ts` |
 | 効果音 / 収録ボイス / 読み上げ | `src/game/sfx.ts` / `voiceClips.ts` / `speech.ts` |
-| 画面（タイトル・プレイ・結果） | `src/App.tsx`, `src/components/PopParts.tsx`, `src/index.css` |
+| ジェリーボールの描画・粒子 | `src/game/draw.ts`, `src/game/particles.ts` |
+| 画面（タイトル・プレイ・結果） | `src/App.tsx`, `src/components/*`（Tailwind）, `src/index.css` |
 
 ## 声を差し替える
 
