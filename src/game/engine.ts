@@ -1,7 +1,9 @@
 import Matter from 'matter-js';
-import { shade, withAlpha, type KanaChar, type Stage } from './stages';
+import type { KanaChar, Stage } from './stages';
+import { drawJellyBall, type JellyItem } from './draw';
+import { burst, drawParticles, updateParticles, type Particle } from './particles';
 import { Fx, MULT_COLORS, buzz, comboMult } from './popFx';
-import { FINAL_TIERS, drawFinalDecor } from './popFinal';
+import { FINAL_TIERS } from './popFinal';
 import { speakChar } from './speech';
 import { playFinish, playPopComboUp, playPopDrop, playPopMergeCombo, playPopMiss, playPopSpecial, unlockSfx } from './sfx';
 import type { PopMode } from './popStore';
@@ -19,8 +21,6 @@ const SPAWN_Y = 62;
 const DROP_COOLDOWN = 380; // ms
 const OVER_MS = 1600;
 const STEP = 1000 / 60; // 物理は固定ステップ(端末のfpsで挙動を変えない)
-const FONT = '"Noto Sans JP", "Hiragino Kaku Gothic ProN", "Yu Gothic", "Meiryo", sans-serif';
-const LATIN_FONT = 'system-ui, -apple-system, "Segoe UI", Roboto, "Noto Sans", sans-serif';
 // 読みモード: 色と大きさは全員同じにして、文字そのものを見ないと判別できないようにする。
 // 「文字面」(あ)と「読み面」(a)の見分けだけは色で付ける(どの文字かは分からない)。
 const READ_R = 32; // 盤面が詰まりやすいので小さめ(40だとボットでも0/6でクリアできなかった)
@@ -77,87 +77,7 @@ const medalOf = (b: Matter.Body): Medal | null => {
   return p && typeof p.level === 'number' ? (p as Medal) : null;
 };
 
-// ---------- パーティクル(火花・破片) ----------
-type Particle = {
-  x: number; y: number; vx: number; vy: number;
-  life: number; maxLife: number; size: number; rot: number; vr: number;
-  kind: 'shard' | 'spark' | 'ring'; color: string;
-};
-
-const SPARK_COLORS = ['#f2c94c', '#e0902f', '#5aa0d6', '#e8eef7', '#3bb3a3'];
-
-const burst = (list: Particle[], x: number, y: number, power = 1, colors: string[] = SPARK_COLORS) => {
-  const n = 16 + Math.floor(Math.random() * 6);
-  for (let i = 0; i < n; i++) {
-    const a = (Math.PI * 2 * i) / n + Math.random() * 0.4;
-    const v = (2.6 + Math.random() * 4) * power;
-    list.push({
-      x, y,
-      vx: Math.cos(a) * v,
-      vy: Math.sin(a) * v - 1,
-      life: 1,
-      maxLife: 0.45 + Math.random() * 0.4,
-      size: (4 + Math.random() * 7) * power,
-      rot: Math.random() * Math.PI,
-      vr: (Math.random() - 0.5) * 0.4,
-      kind: i % 3 === 0 ? 'shard' : i % 3 === 1 ? 'spark' : 'ring',
-      color: colors[Math.floor(Math.random() * colors.length)],
-    });
-  }
-};
-
-const stepParticles = (list: Particle[], dt: number) => {
-  for (let i = list.length - 1; i >= 0; i--) {
-    const p = list[i];
-    p.x += p.vx;
-    p.y += p.vy;
-    p.vy += 0.2;
-    p.vx *= 0.98;
-    p.vy *= 0.98;
-    p.rot += p.vr;
-    p.life -= dt / p.maxLife;
-    if (p.life <= 0) list.splice(i, 1);
-  }
-};
-
-const drawParticles = (ctx: CanvasRenderingContext2D, list: Particle[]) => {
-  for (const p of list) {
-    const life = Math.max(0, Math.min(1, p.life));
-    const size = p.size * (0.5 + life * 0.7);
-    ctx.save();
-    ctx.globalAlpha = life;
-    ctx.translate(p.x, p.y);
-    ctx.rotate(p.rot);
-    ctx.fillStyle = p.color;
-    ctx.strokeStyle = p.color;
-    if (p.kind === 'shard') {
-      // 菱形の破片
-      ctx.beginPath();
-      ctx.moveTo(0, -size * 0.7);
-      ctx.lineTo(size * 0.4, 0);
-      ctx.lineTo(0, size * 0.7);
-      ctx.lineTo(-size * 0.4, 0);
-      ctx.closePath();
-      ctx.fill();
-    } else if (p.kind === 'spark') {
-      // 細い火花の筋
-      ctx.lineWidth = Math.max(1.5, size * 0.18);
-      ctx.lineCap = 'round';
-      ctx.beginPath();
-      ctx.moveTo(-size * 0.8, 0);
-      ctx.lineTo(size * 0.8, 0);
-      ctx.stroke();
-    } else {
-      ctx.lineWidth = Math.max(1.5, size * 0.16);
-      ctx.beginPath();
-      ctx.arc(0, 0, size * 0.45, 0, Math.PI * 2);
-      ctx.stroke();
-    }
-    ctx.restore();
-  }
-};
-
-// ---------- メダルの描画 ----------
+// ---------- 描画の部品 ----------
 const roundRect = (ctx: CanvasRenderingContext2D, x: number, y: number, w: number, h: number, r: number) => {
   ctx.beginPath();
   ctx.moveTo(x + r, y);
@@ -166,120 +86,6 @@ const roundRect = (ctx: CanvasRenderingContext2D, x: number, y: number, w: numbe
   ctx.arcTo(x, y + h, x, y, r);
   ctx.arcTo(x, y, x + w, y, r);
   ctx.closePath();
-};
-
-type DrawItem = { radius: number; base: string; glyph: string; label: string; latin: boolean; hideLabel: boolean };
-
-type DrawOpts = { scale?: number; alpha?: number; squash?: number; isFinal?: boolean; finalTier?: number; t?: number };
-
-/**
- * 文字メダル: レベル色に染めた暗い円盤+太いリング+ほぼ白の大きな文字。
- * 視認性のため、(1)文字は白に近い色+暗い縁取りで背景から浮かせる (2)ボディをレベル色で染めて
- * 隣のレベルと見分けやすくする (3)小さいメダル/読みモードではローマ字を省いて文字を大きく描く。
- * 最終形はバッジと、段階ごとの飾りをまとう。
- */
-export const drawMedal = (
-  ctx: CanvasRenderingContext2D,
-  x: number,
-  y: number,
-  item: DrawItem,
-  { scale = 1, alpha = 1, squash = 0, isFinal = false, finalTier = 0, t = 0 }: DrawOpts = {},
-) => {
-  const aura = isFinal;
-  const s = item.radius * scale;
-  const accent = item.base;
-  const showLabel = item.radius >= 30 && !item.hideLabel;
-  const family = item.latin ? LATIN_FONT : FONT;
-  ctx.save();
-  ctx.globalAlpha = alpha;
-  ctx.translate(x, y);
-  ctx.scale(1 + squash, 1 - squash);
-
-  // 接地影
-  ctx.save();
-  ctx.globalAlpha = alpha * 0.4;
-  ctx.fillStyle = '#000';
-  ctx.beginPath();
-  ctx.ellipse(0, s * 0.88, s * 0.78, s * 0.15, 0, 0, Math.PI * 2);
-  ctx.fill();
-  ctx.restore();
-
-  // 本体: レベル色で染めた暗いメタル + 外側のグロー
-  const body = ctx.createRadialGradient(-s * 0.3, -s * 0.4, s * 0.05, 0, 0, s * 1.05);
-  body.addColorStop(0, shade(accent, -0.35));
-  body.addColorStop(0.6, shade(accent, -0.68));
-  body.addColorStop(1, shade(accent, -0.85));
-  ctx.beginPath();
-  ctx.arc(0, 0, s, 0, Math.PI * 2);
-  ctx.fillStyle = body;
-  ctx.shadowColor = withAlpha(accent, aura ? 0.95 : 0.55);
-  ctx.shadowBlur = s * (aura ? 0.55 : 0.25);
-  ctx.fill();
-  ctx.shadowColor = 'transparent';
-  ctx.shadowBlur = 0;
-
-  // 太いリング(上が明るく下が暗い金属)
-  const rw = Math.max(3, s * 0.12);
-  const rim = ctx.createLinearGradient(0, -s, 0, s);
-  rim.addColorStop(0, shade(accent, 0.6));
-  rim.addColorStop(0.5, accent);
-  rim.addColorStop(1, shade(accent, -0.25));
-  ctx.lineWidth = rw;
-  ctx.strokeStyle = rim;
-  ctx.beginPath();
-  ctx.arc(0, 0, s - rw / 2, 0, Math.PI * 2);
-  ctx.stroke();
-
-  // 左上のベベルハイライト
-  ctx.save();
-  ctx.strokeStyle = 'rgba(255,255,255,0.3)';
-  ctx.lineWidth = Math.max(1.2, s * 0.035);
-  ctx.beginPath();
-  ctx.arc(0, 0, s - rw * 1.4, Math.PI * 1.1, Math.PI * 1.5);
-  ctx.stroke();
-  ctx.restore();
-
-  // 文字: 大きく描き、リングの内側に収まらない長い文字(拗音・ローマ字3文字)だけ縮小する
-  ctx.textAlign = 'center';
-  ctx.textBaseline = 'middle';
-  const inner = s - rw;
-  let size = inner * (showLabel ? 1.0 : item.latin ? 0.95 : 1.12);
-  const weight = item.latin ? 800 : 700;
-  ctx.font = `${weight} ${size}px ${family}`;
-  const w = ctx.measureText(item.glyph).width;
-  const maxW = inner * (item.latin ? 1.45 : 1.55);
-  if (w > maxW) {
-    size *= maxW / w;
-    ctx.font = `${weight} ${size}px ${family}`;
-  }
-  const gy = showLabel ? -inner * 0.14 : 0;
-  // 暗い縁取り → 発光 → ほぼ白の文字、の順で重ねて背景から浮かせる
-  ctx.lineJoin = 'round';
-  ctx.lineWidth = Math.max(3, size * 0.14);
-  ctx.strokeStyle = 'rgba(5, 9, 16, 0.9)';
-  ctx.strokeText(item.glyph, 0, gy);
-  ctx.shadowColor = withAlpha(accent, 0.9);
-  ctx.shadowBlur = s * 0.16;
-  ctx.fillStyle = '#ffffff';
-  ctx.fillText(item.glyph, 0, gy);
-  ctx.shadowColor = 'transparent';
-  ctx.shadowBlur = 0;
-
-  // ローマ字: 暗い縁取り付きの明るい色で、十分な大きさにする
-  if (showLabel) {
-    const ls = Math.max(11, inner * 0.3);
-    ctx.font = `800 ${ls}px ${LATIN_FONT}`;
-    ctx.lineWidth = Math.max(3, ls * 0.28);
-    ctx.strokeStyle = 'rgba(5, 9, 16, 0.9)';
-    ctx.strokeText(item.label, 0, inner * 0.62);
-    ctx.fillStyle = shade(accent, 0.65);
-    ctx.fillText(item.label, 0, inner * 0.62);
-  }
-
-  // 最終形: バッジと、👑/💎/🌈への進化の飾り
-  if (isFinal) drawFinalDecor(ctx, s, finalTier, t);
-
-  ctx.restore();
 };
 
 const popCurve = (v: number) => (v <= 0 ? 0 : Math.sin(v * Math.PI * 0.9));
@@ -366,10 +172,11 @@ export class PopEngine {
   }
 
   /** 描画用のアイテム。読みモードは色を統一し、読み面はローマ字だけを出す */
-  private itemFor(level: number, face: number): DrawItem {
+  private itemFor(level: number, face: number): JellyItem {
     const c = this.chars[level];
-    if (!this.pairMode) return { radius: c.radius, base: c.base, glyph: c.kana, label: c.romaji, latin: false, hideLabel: false };
-    return { radius: READ_R, base: face ? READ_BASE : GLYPH_BASE, glyph: face ? c.romaji : c.kana, label: c.romaji, latin: !!face, hideLabel: true };
+    if (!this.pairMode) return c;
+    // 読み面はローマ字だけ、文字面はかなだけ。色と大きさは全員同じ
+    return { radius: READ_R, base: face ? READ_BASE : GLYPH_BASE, kana: face ? c.romaji : c.kana, romaji: '', latin: !!face };
   }
 
   /**
@@ -408,7 +215,7 @@ export class PopEngine {
     window.addEventListener('resize', this.resize);
 
     // Canvas描画は未ロードのWebフォントを自動では待たないので、先に読み込みを促しておく
-    document.fonts?.load('700 40px "Noto Sans JP"', 'あア').catch(() => {});
+    document.fonts?.load('700 40px "Zen Maru Gothic"', 'あア').catch(() => {});
 
     // 自動テスト用: ?e2e を付けて開いたときだけ、エンジンを window から触れるようにする
     if (new URLSearchParams(window.location.search).has('e2e')) (window as unknown as { __pop?: PopEngine }).__pop = this;
@@ -632,7 +439,7 @@ export class PopEngine {
     const hadCombo = this.combo;
     this.misses += 1;
     this.breakCombo();
-    this.fx.popup(dropped.position.x, dropped.position.y - this.rad(d.level) - 6, '✗', '#ff6b6b', 26);
+    this.fx.popup(dropped.position.x, dropped.position.y - this.rad(d.level) - 6, '？', '#A98EBE', 26);
     this.fx.shake(2);
     playPopMiss();
     this.cb.onMiss({ hadCombo, dropped: { level: d.level, face: d.face }, other: { level: o.level, face: o.face } });
@@ -747,7 +554,7 @@ export class PopEngine {
     const points = (level + 1) * 10 * mult;
     playPopMergeCombo(level, isMax, this.combo);
     speakChar(this.chars[level], { excited: isMax });
-    burst(this.particles, x, y, (isMax ? 1.6 : 1) + mult * 0.12, mult > 1 ? [MULT_COLORS[mult], '#ffffff', ...SPARK_COLORS] : undefined);
+    burst(this.particles, x, y, (isMax ? 1.6 : 1) + mult * 0.12, mult > 1 ? [MULT_COLORS[mult], '#FFFFFF', '#FFD59E', '#FFC6DF'] : undefined);
     this.fx.wave(x, y, this.rad(level) * 2.4, MULT_COLORS[mult]);
     this.fx.popup(x, y - this.rad(level), mult > 1 ? `+${points} ×${mult}` : `+${points}`, MULT_COLORS[mult], 17 + mult * 2);
     this.fx.shake(1.2 + mult * 0.9 + (isMax ? 2.5 : 0));
@@ -810,7 +617,7 @@ export class PopEngine {
       this.snapMerge();
       this.accumulator -= STEP;
     }
-    stepParticles(this.particles, dt);
+    updateParticles(this.particles, dt);
     this.fx.step(dt);
 
     // ラインを超えたまま一定時間たまっていたら終了(落としたてのメダルは猶予)
@@ -846,7 +653,7 @@ export class PopEngine {
     const dt = Math.min((t - this.lastFrame) / 1000, 0.05);
     this.lastFrame = t;
     if (this.finished) {
-      stepParticles(this.particles, dt);
+      updateParticles(this.particles, dt);
       this.fx.step(dt);
       this.confettiT += dt;
       if (this.confettiT > 0.55) {
@@ -865,90 +672,60 @@ export class PopEngine {
     ctx.clearRect(0, 0, FIELD_W, FIELD_H);
     this.fx.beginShake(ctx);
 
-    // フィールド(暗いパネル+うっすらグリッド)
-    ctx.save();
-    ctx.fillStyle = '#0f1824';
-    roundRect(ctx, 6, 30, FIELD_W - 12, FIELD_H - 36, 22);
-    ctx.fill();
-    ctx.save();
-    roundRect(ctx, 6, 30, FIELD_W - 12, FIELD_H - 36, 22);
-    ctx.clip();
-    ctx.strokeStyle = 'rgba(140, 170, 210, 0.045)';
-    ctx.lineWidth = 1;
-    for (let gx = 6; gx < FIELD_W; gx += 42) {
-      ctx.beginPath();
-      ctx.moveTo(gx, 30);
-      ctx.lineTo(gx, FIELD_H);
-      ctx.stroke();
-    }
-    for (let gy = 30; gy < FIELD_H; gy += 42) {
-      ctx.beginPath();
-      ctx.moveTo(6, gy);
-      ctx.lineTo(FIELD_W - 6, gy);
-      ctx.stroke();
-    }
-    ctx.restore();
-    // コンボ中は盤面の枠が倍率の色で光る
+    // ドロップボックス（すりガラス調の枠）。コンボ中は枠が倍率の色で光る
     const mult = comboMult(this.combo);
-    ctx.lineWidth = mult > 1 ? 3 : 2;
-    ctx.strokeStyle = mult > 1 ? MULT_COLORS[mult] : 'rgba(140, 170, 210, 0.35)';
+    ctx.save();
+    ctx.fillStyle = 'rgba(255,255,255,0.28)';
+    roundRect(ctx, 6, 30, FIELD_W - 12, FIELD_H - 36, 28);
+    ctx.fill();
+    ctx.lineWidth = mult > 1 ? 3.5 : 2;
+    ctx.strokeStyle = mult > 1 ? MULT_COLORS[mult] : 'rgba(255,255,255,0.75)';
     if (mult > 1) {
       ctx.shadowColor = MULT_COLORS[mult];
       ctx.shadowBlur = 8 + mult * 4 + Math.sin(t / 160) * 3;
     }
-    roundRect(ctx, 6, 30, FIELD_W - 12, FIELD_H - 36, 22);
     ctx.stroke();
     ctx.restore();
 
-    // ゲームオーバーライン(はみ出していると赤く点滅)
+    // 上限ライン（赤やバツは使わず、やさしいラベンダーの点線がそっと光るだけ）
     const danger = Math.min(1, this.overTime / OVER_MS);
     ctx.save();
-    ctx.setLineDash([10, 8]);
+    ctx.setLineDash([10, 10]);
     ctx.lineWidth = 2 + danger * 2;
-    ctx.strokeStyle = `rgba(255, 90, 80, ${0.6 + danger * 0.4})`;
+    ctx.strokeStyle = 'rgba(170, 140, 220, ' + (0.25 + danger * 0.45 + Math.sin(t / 220) * 0.12 * danger) + ')';
     ctx.beginPath();
     ctx.moveTo(18, LINE_Y);
     ctx.lineTo(FIELD_W - 18, LINE_Y);
     ctx.stroke();
     ctx.restore();
-    // ラインを越えて積もり始めたら、盤面の枠を赤く点滅させて危険を知らせる
-    if (danger > 0) {
-      ctx.save();
-      ctx.lineWidth = 4;
-      ctx.strokeStyle = `rgba(255, 80, 70, ${0.3 + 0.5 * Math.abs(Math.sin(t / 110)) * danger})`;
-      roundRect(ctx, 6, 30, FIELD_W - 12, FIELD_H - 36, 22);
-      ctx.stroke();
-      ctx.restore();
-    }
 
-    // 次に落とすメダルと狙い線
+    // 落下ガイド & プレビューボール
     if (!this.finished && !this.stageClearing) {
       const next = this.itemFor(this.next.level, this.next.face);
       ctx.save();
-      ctx.setLineDash([4, 10]);
-      ctx.strokeStyle = 'rgba(90, 210, 255, 0.75)';
-      ctx.lineWidth = 2.5;
+      ctx.setLineDash([6, 12]);
+      ctx.strokeStyle = 'rgba(255,255,255,0.85)';
+      ctx.lineWidth = 3;
       ctx.beginPath();
       ctx.moveTo(this.aimX, SPAWN_Y + next.radius);
       ctx.lineTo(this.aimX, FIELD_H - 20);
       ctx.stroke();
       ctx.restore();
       const bob = this.pointerDown ? 0 : Math.sin(t / 420) * 3;
-      drawMedal(ctx, this.aimX, SPAWN_Y + bob, next, { alpha: 0.96 });
+      drawJellyBall(ctx, this.aimX, SPAWN_Y + bob, next, { alpha: 0.96 });
     }
 
-    // 最終形は飾り(アイコン)が上にはみ出すので、通常の文字を先に描いて最後に重ねる
+    // 最終形は飾り(王冠・宝石・虹)が上にはみ出すので、通常の文字を先に描いて最後に重ねる
     const bodies = Composite.allBodies(this.engine.world).filter((b) => !b.isStatic && medalOf(b));
     bodies.sort((a, b) => Number((medalOf(a) as Medal).level === this.maxLevel) - Number((medalOf(b) as Medal).level === this.maxLevel));
     for (const b of bodies) {
       const m = medalOf(b) as Medal;
       const pop = popCurve(m.pop);
-      drawMedal(ctx, b.position.x, b.position.y, this.itemFor(m.level, m.face), {
+      drawJellyBall(ctx, b.position.x, b.position.y, this.itemFor(m.level, m.face), {
         scale: 1 + 0.2 * pop,
         squash: -0.05 * pop,
         isFinal: m.level === this.maxLevel,
-        finalTier: m.finalTier,
-        t,
+        finalTier: m.finalTier as 0 | 1 | 2 | 3,
       });
     }
 

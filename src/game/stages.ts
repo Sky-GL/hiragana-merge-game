@@ -8,16 +8,16 @@ export type KanaChar = {
   romaji: string;
   /** 収録ボイスのファイル名(romaji と異なる文字だけ別指定) */
   clip: string;
-  /** ふつうモードでの半径 */
+  /** ふつうモードでの半径（読みモードは全員同じ） */
   radius: number;
-  /** ふつうモードでの色 */
+  /** ふつうモードでの色（読みモードは文字面/読み面の2色だけ） */
   base: string;
 };
 
 export type Stage = {
   id: number;
-  title: string;
-  /** ステージ一覧に出す代表文字 */
+  label: string;
+  /** 画面に出すのはこの代表文字だけ（説明文は使わない） */
   cover: string;
   chars: KanaChar[];
 };
@@ -25,54 +25,63 @@ export type Stage = {
 /** [かな, ローマ字, 収録ボイス名(省略時はローマ字)] */
 type Item = [string, string, string?];
 
-type Row = { title: string; cover: string; items: Item[] };
+type Row = { label: string; cover: string; items: Item[] };
 
 // 5文字に満たない行は、直前の行の末尾の文字(復習)で埋めて5文字にそろえる。
 const ROWS: Row[] = [
-  { title: 'あ行', cover: 'あ', items: [['あ', 'a'], ['い', 'i'], ['う', 'u'], ['え', 'e'], ['お', 'o']] },
-  { title: 'か行', cover: 'か', items: [['か', 'ka'], ['き', 'ki'], ['く', 'ku'], ['け', 'ke'], ['こ', 'ko']] },
-  { title: 'さ行', cover: 'さ', items: [['さ', 'sa'], ['し', 'shi'], ['す', 'su'], ['せ', 'se'], ['そ', 'so']] },
-  { title: 'た行', cover: 'た', items: [['た', 'ta'], ['ち', 'chi'], ['つ', 'tsu'], ['て', 'te'], ['と', 'to']] },
-  { title: 'な行', cover: 'な', items: [['な', 'na'], ['に', 'ni'], ['ぬ', 'nu'], ['ね', 'ne'], ['の', 'no']] },
-  { title: 'は行', cover: 'は', items: [['は', 'ha'], ['ひ', 'hi'], ['ふ', 'fu'], ['へ', 'he'], ['ほ', 'ho']] },
-  { title: 'ま行', cover: 'ま', items: [['ま', 'ma'], ['み', 'mi'], ['む', 'mu'], ['め', 'me'], ['も', 'mo']] },
-  { title: 'や行', cover: 'や', items: [['め', 'me'], ['も', 'mo'], ['や', 'ya'], ['ゆ', 'yu'], ['よ', 'yo']] },
-  { title: 'ら行', cover: 'ら', items: [['ら', 'ra'], ['り', 'ri'], ['る', 'ru'], ['れ', 're'], ['ろ', 'ro']] },
-  { title: 'わ・ん', cover: 'わ', items: [['れ', 're'], ['ろ', 'ro'], ['わ', 'wa'], ['を', 'o', 'wo'], ['ん', 'n']] },
-  { title: 'が行', cover: 'が', items: [['が', 'ga'], ['ぎ', 'gi'], ['ぐ', 'gu'], ['げ', 'ge'], ['ご', 'go']] },
-  { title: 'ざ行', cover: 'ざ', items: [['ざ', 'za'], ['じ', 'ji'], ['ず', 'zu'], ['ぜ', 'ze'], ['ぞ', 'zo']] },
-  { title: 'だ行', cover: 'だ', items: [['だ', 'da'], ['ぢ', 'ji', 'dji'], ['づ', 'zu', 'dzu'], ['で', 'de'], ['ど', 'do']] },
-  { title: 'ば行', cover: 'ば', items: [['ば', 'ba'], ['び', 'bi'], ['ぶ', 'bu'], ['べ', 'be'], ['ぼ', 'bo']] },
-  { title: 'ぱ行', cover: 'ぱ', items: [['ぱ', 'pa'], ['ぴ', 'pi'], ['ぷ', 'pu'], ['ぺ', 'pe'], ['ぽ', 'po']] },
-  { title: '拗音①', cover: 'きゃ', items: [['きゃ', 'kya'], ['しゃ', 'sha'], ['ちゃ', 'cha'], ['にゃ', 'nya'], ['ひゃ', 'hya']] },
-  { title: '拗音②', cover: 'みゃ', items: [['みゃ', 'mya'], ['りゃ', 'rya'], ['ぎゃ', 'gya'], ['じゃ', 'ja'], ['びゃ', 'bya']] },
-  { title: '拗音③', cover: 'きゅ', items: [['きゅ', 'kyu'], ['しゅ', 'shu'], ['ちゅ', 'chu'], ['にゅ', 'nyu'], ['ひゅ', 'hyu']] },
-  { title: '拗音④', cover: 'みゅ', items: [['みゅ', 'myu'], ['りゅ', 'ryu'], ['ぎゅ', 'gyu'], ['じゅ', 'ju'], ['びゅ', 'byu']] },
-  { title: '拗音⑤', cover: 'きょ', items: [['きょ', 'kyo'], ['しょ', 'sho'], ['ちょ', 'cho'], ['にょ', 'nyo'], ['ひょ', 'hyo']] },
-  { title: '拗音⑥', cover: 'みょ', items: [['みょ', 'myo'], ['りょ', 'ryo'], ['ぎょ', 'gyo'], ['じょ', 'jo'], ['びょ', 'byo']] },
+  { label: 'A-ROW', cover: 'あ', items: [['あ', 'a'], ['い', 'i'], ['う', 'u'], ['え', 'e'], ['お', 'o']] },
+  { label: 'K-ROW', cover: 'か', items: [['か', 'ka'], ['き', 'ki'], ['く', 'ku'], ['け', 'ke'], ['こ', 'ko']] },
+  { label: 'S-ROW', cover: 'さ', items: [['さ', 'sa'], ['し', 'shi'], ['す', 'su'], ['せ', 'se'], ['そ', 'so']] },
+  { label: 'T-ROW', cover: 'た', items: [['た', 'ta'], ['ち', 'chi'], ['つ', 'tsu'], ['て', 'te'], ['と', 'to']] },
+  { label: 'N-ROW', cover: 'な', items: [['な', 'na'], ['に', 'ni'], ['ぬ', 'nu'], ['ね', 'ne'], ['の', 'no']] },
+  { label: 'H-ROW', cover: 'は', items: [['は', 'ha'], ['ひ', 'hi'], ['ふ', 'fu'], ['へ', 'he'], ['ほ', 'ho']] },
+  { label: 'M-ROW', cover: 'ま', items: [['ま', 'ma'], ['み', 'mi'], ['む', 'mu'], ['め', 'me'], ['も', 'mo']] },
+  { label: 'Y-ROW', cover: 'や', items: [['め', 'me'], ['も', 'mo'], ['や', 'ya'], ['ゆ', 'yu'], ['よ', 'yo']] },
+  { label: 'R-ROW', cover: 'ら', items: [['ら', 'ra'], ['り', 'ri'], ['る', 'ru'], ['れ', 're'], ['ろ', 'ro']] },
+  { label: 'W & N', cover: 'わ', items: [['れ', 're'], ['ろ', 'ro'], ['わ', 'wa'], ['を', 'o', 'wo'], ['ん', 'n']] },
+  { label: 'G-ROW', cover: 'が', items: [['が', 'ga'], ['ぎ', 'gi'], ['ぐ', 'gu'], ['げ', 'ge'], ['ご', 'go']] },
+  { label: 'Z-ROW', cover: 'ざ', items: [['ざ', 'za'], ['じ', 'ji'], ['ず', 'zu'], ['ぜ', 'ze'], ['ぞ', 'zo']] },
+  { label: 'D-ROW', cover: 'だ', items: [['だ', 'da'], ['ぢ', 'ji', 'dji'], ['づ', 'zu', 'dzu'], ['で', 'de'], ['ど', 'do']] },
+  { label: 'B-ROW', cover: 'ば', items: [['ば', 'ba'], ['び', 'bi'], ['ぶ', 'bu'], ['べ', 'be'], ['ぼ', 'bo']] },
+  { label: 'P-ROW', cover: 'ぱ', items: [['ぱ', 'pa'], ['ぴ', 'pi'], ['ぷ', 'pu'], ['ぺ', 'pe'], ['ぽ', 'po']] },
+  { label: 'KYA', cover: 'きゃ', items: [['きゃ', 'kya'], ['しゃ', 'sha'], ['ちゃ', 'cha'], ['にゃ', 'nya'], ['ひゃ', 'hya']] },
+  { label: 'MYA', cover: 'みゃ', items: [['みゃ', 'mya'], ['りゃ', 'rya'], ['ぎゃ', 'gya'], ['じゃ', 'ja'], ['びゃ', 'bya']] },
+  { label: 'KYU', cover: 'きゅ', items: [['きゅ', 'kyu'], ['しゅ', 'shu'], ['ちゅ', 'chu'], ['にゅ', 'nyu'], ['ひゅ', 'hyu']] },
+  { label: 'MYU', cover: 'みゅ', items: [['みゅ', 'myu'], ['りゅ', 'ryu'], ['ぎゅ', 'gyu'], ['じゅ', 'ju'], ['びゅ', 'byu']] },
+  { label: 'KYO', cover: 'きょ', items: [['きょ', 'kyo'], ['しょ', 'sho'], ['ちょ', 'cho'], ['にょ', 'nyo'], ['ひょ', 'hyo']] },
+  { label: 'MYO', cover: 'みょ', items: [['みょ', 'myo'], ['りょ', 'ryo'], ['ぎょ', 'gyo'], ['じょ', 'jo'], ['びょ', 'byo']] },
 ];
 
-/** レベルごとのアクセント色(スチール→シアン→紫→橙→金)。隣り合うレベルで色相が大きく変わる */
-const COLORS = ['#a5b4c4', '#38d0f0', '#a070ff', '#ff9a2e', '#ffd966'];
+/**
+ * 行ごとに色相と並びを変える。色が「何番目の文字か」の手がかりにならず、
+ * ひらがなの形・音・並びそのものを見て遊べるようにする。
+ */
+const COLOR_BANK = ['#FFB6C1', '#FFD1BA', '#FFF2A3', '#B9F3CC', '#C1E3FE', '#D9C7F7', '#FFC6DF', '#A9E9E4', '#FFDFA6', '#CFE6AE', '#F7A8C0', '#C9D8F7'] as const;
 
-const MIN_R = 30;
-const MAX_R = 56;
+const R_MIN = 26;
+const R_MAX = 116;
 
-/** レベル0〜n-1 の半径を等比で補間(最小30 → 最大56) */
-const radiusOf = (level: number, count: number) =>
-  count <= 1 ? MIN_R : Math.round(MIN_R * Math.pow(MAX_R / MIN_R, level / (count - 1)));
+function colorFor(stageIndex: number, charIndex: number) {
+  const stride = stageIndex % 2 === 0 ? 5 : 7;
+  return COLOR_BANK[(stageIndex * 7 + charIndex * stride + stageIndex * stageIndex) % COLOR_BANK.length];
+}
 
-export const STAGES: Stage[] = ROWS.map((row, i) => ({
-  id: i + 1,
-  title: row.title,
+/** 10段階ステージの成長曲線を基準にする。行別の短いステージで最終文字だけ巨大化させない。 */
+function radiusFor(i: number) {
+  return Math.round(R_MIN * Math.pow(R_MAX / R_MIN, i / 9));
+}
+
+export const STAGES: Stage[] = ROWS.map((row, si) => ({
+  id: si + 1,
+  label: row.label,
   cover: row.cover,
   chars: row.items.map(([kana, romaji, clip], level) => ({
     level,
     kana,
     romaji,
     clip: clip ?? romaji,
-    radius: radiusOf(level, row.items.length),
-    base: COLORS[level % COLORS.length],
+    radius: radiusFor(level),
+    base: colorFor(si, level),
   })),
 }));
 
@@ -87,10 +96,4 @@ export function shade(hex: string, amount: number): string {
   const n = parseInt(hex.slice(1), 16);
   const f = (v: number) => Math.round(amount >= 0 ? v + (255 - v) * amount : v * (1 + amount));
   return `rgb(${f((n >> 16) & 255)}, ${f((n >> 8) & 255)}, ${f(n & 255)})`;
-}
-
-/** "#RRGGBB" + 透明度 → rgba文字列(発光・縁取り用) */
-export function withAlpha(hex: string, alpha: number): string {
-  const n = parseInt(hex.slice(1), 16);
-  return `rgba(${(n >> 16) & 255}, ${(n >> 8) & 255}, ${n & 255}, ${alpha})`;
 }
